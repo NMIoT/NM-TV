@@ -1,0 +1,5 @@
+{
+    "port": "COM5",
+    "board": "heltec:esp32:heltec_wifi_lora_32_V3",
+    "sketch": ".pio\\libdeps\\esp32-c3-042-oled\\ssd1306xled\\examples\\OLED_demo\\OLED_demo.ino"
+}

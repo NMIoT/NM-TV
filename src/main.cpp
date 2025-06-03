@@ -1,0 +1,119 @@
+#include <esp_task_wdt.h>
+#include "global.h"
+#include "logger.h"
+#include "display.h"
+#include "button.h"
+#include "storage.h"
+#include "market.h"
+#include "github.h"
+#include "esp32/clk.h"
+#include "timezone.h"
+#include "helper.h"
+
+static String       taskName = "";
+
+TaskHandle_t task_btn = NULL, task_market = NULL, task_monitor = NULL, task_lvgl_tick = NULL, task_ui_refresh = NULL;
+
+//全局抽象数据结构
+nm_sal_t g_nm;
+
+void setup() {
+  /********************************************************** INIT SERIAL *****************************************************************/
+  delay(1000);
+  logo_print();
+  /************************************************************* INIT GLOBAL **************************************************************/
+  if(!load_g_nm()){
+    while (true){
+      LOG_E("Failed to load global data structure.");
+      delay(1000);
+    }
+  }
+  LOG_I("CPU %d core(s) detected, frequency %d MHz", (int)SOC_CPU_CORES_NUM, (int)esp_clk_cpu_freq()/1000000);
+  /********************************************************* INIT THREAD WTDG *************************************************************/
+  LOG_I("Initializing thread wtdg......");
+  if(esp_task_wdt_init(MINER_WTDG_TIMEOUT, true) != ESP_OK){
+    LOG_E("Thread wtdg initialization failed");
+  }
+  /**************************************************************** INIT BUTTON ***********************************************************/
+  taskName = "(button)";
+  xTaskCreatePinnedToCore(button_thread_entry, taskName.c_str(), 1024*2, (void*)taskName.c_str(), TASK_PRIORITY_BTN, &task_btn, BtnTaskCore);
+  delay(50);
+  /*********************************************************** INIT DISPLAY ***************************************************************/
+  taskName = "(ui)";
+  xTaskCreatePinnedToCore(display_thread, taskName.c_str(), 1024*4, (void*)taskName.c_str(), TASK_PRIORITY_DISPLAY, NULL, UiTaskCore);
+  delay(10);
+  /*********************************************************** FORCE CONFIG **************************************************************/
+  if(g_nm.need_cfg){
+    xSemaphoreGive(g_nm.connection.wifi.force_cfg_xsem);
+    nvs_config_set_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, false);
+    while(!wifi_config(true)){
+      delay(1000);
+    }
+  }
+  /************************************************************** INIT WIFI ****************************************************************/
+  taskName = "(connection)";
+  xTaskCreate(wifi_connect_thread_entry, taskName.c_str(), 1024*5, (void*)taskName.c_str(), TASK_PRIORITY_CONNECT, NULL);
+  while (WL_CONNECTED != g_nm.connection.wifi.status_param.status){
+    delay(1000);
+  }
+  delay(2000);
+  /**************************************************************CHECK FIRMWARE RELEASE *****************************************************/
+  ReleaseCheckerClass *releaseChecker = new ReleaseCheckerClass(); 
+  g_nm.board.fw_latest_release = releaseChecker->get_latest_release();
+
+  if(0 == compareVersions(g_nm.board.fw_version, g_nm.board.fw_latest_release)){
+    LOG_I("Firmware is up to date: %s", g_nm.board.fw_latest_release.c_str());
+  }
+  else if(1 == compareVersions(g_nm.board.fw_version, g_nm.board.fw_latest_release)){
+    LOG_W("Firmware seems under development: %s", g_nm.board.fw_version.c_str());
+  }
+  else if(-2 == compareVersions(g_nm.board.fw_version, g_nm.board.fw_latest_release)){
+    LOG_W("Get release info failed, please check your network connection.");
+  }
+  else if(-1 == compareVersions(g_nm.board.fw_version, g_nm.board.fw_latest_release)){
+    LOG_W("New version available: %s", g_nm.board.fw_latest_release.c_str());
+  }
+  delete releaseChecker;
+  /******************************************************************TIMEZONE *************************************************************/
+  // fetch timezone from ipapi
+  TimezoneFetcher *tz = new TimezoneFetcher();
+  if(!tz->fetch()){
+      g_nm.timezone = 0.0; //default timezone
+      g_nm.tz_updated = false;
+      LOG_W("Timezone fetch failed, using default timezone: %.1f", g_nm.timezone); 
+  }else{
+      g_nm.timezone = tz->timezone.toFloat();
+      g_nm.tz_updated = true;
+      LOG_W("Timezone calibrate to : %.1f", g_nm.timezone);
+  }
+  delete tz;
+  /************************************************************** CREATE MARKET THREAD ***************************************************/
+#if defined(HAS_MARKET_FEATURE)
+  if(g_nm.market_enable){
+    taskName = "(market)";
+    xTaskCreatePinnedToCore(market_thread_entry, taskName.c_str(), 1024*4, (void*)taskName.c_str(), TASK_PRIORITY_MARKET, &task_market, MarketTaskCore);
+    while (!g_nm.market->updated){
+      static uint32_t start = millis();
+      if(g_nm.market->istimeout) {
+        delay(2000);
+        break;
+      }
+
+      if(millis() - start > 1000*1){
+        start = millis();
+        LOG_W("Waiting for market data %ds...", g_nm.market->timeout/1000);
+      }
+      delay(10);
+    }
+  }
+#endif
+  /************************************************************** CREATE MONITOR THREAD ***************************************************/
+  taskName = "(monitor)";
+  xTaskCreatePinnedToCore(monitor_thread_entry, taskName.c_str(), 1024*3, (void*)taskName.c_str(), TASK_PRIORITY_MONITOR, &task_monitor, MonitorTaskCore);
+  delay(50);
+}
+
+void loop() {
+  delay(1000);
+}
+
