@@ -114,6 +114,65 @@ void setup() {
 }
 
 void loop() {
+#if 0
+  // 获取当前任务的堆栈水位线高
+  static uint32_t start = millis();
+  static UBaseType_t highWaterMark = uxTaskGetStackHighWaterMark(NULL);
+  static char *taskName = pcTaskGetName(NULL);
+  if(millis() - start > 1000*2){
+      if(task_btn != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_btn);
+          taskName = pcTaskGetName(task_btn);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      if(task_lvgl_tick != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_lvgl_tick);
+          taskName = pcTaskGetName(task_lvgl_tick);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      if(task_ui_refresh != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_ui_refresh);
+          taskName = pcTaskGetName(task_ui_refresh);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      if(task_led != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_led);
+          taskName = pcTaskGetName(task_led);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      if(task_market != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_market);
+          taskName = pcTaskGetName(task_market);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      if(task_swarm != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_swarm);
+          taskName = pcTaskGetName(task_swarm);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      if(task_stratum != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_stratum);
+          taskName = pcTaskGetName(task_stratum);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      if(task_monitor != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_monitor);
+          taskName = pcTaskGetName(task_monitor);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      if(task_nminer != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_nminer);
+          taskName = pcTaskGetName(task_nminer);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      if(task_tminer != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_tminer);
+          taskName = pcTaskGetName(task_tminer);
+          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
+      }
+      start = millis();
+  }
+#endif
   delay(1000);
 }
 
