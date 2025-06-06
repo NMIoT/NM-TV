@@ -281,8 +281,6 @@ void restore_to_factory_setting_cb(){
     }
     LOG_I("NVS partition erased and reinitialized successfully");
 
-    //licence save back
-    nvs_config_set_string(MINER_LICENCE_NAMESPACE, JSON_SPIFFS_KEY_LICENCE, g_nm.board.licence.c_str());
     delay(1000);
     ESP.restart();
 }
@@ -290,15 +288,6 @@ void restore_to_factory_setting_cb(){
 
 void save_status_to_nvs(){
     
-}
-
-
-
-
-bool is_license_exist(void){
-    esp_err_t ret = nvs_flash_init();
-    g_nm.board.licence  = nvs_config_get_string(MINER_LICENCE_NAMESPACE, JSON_SPIFFS_KEY_LICENCE, "");
-    return (g_nm.board.licence != "");
 }
 
 bool load_g_nm(void){
@@ -321,35 +310,26 @@ bool load_g_nm(void){
         g_nm.board.fw_latest_release         = "";
         g_nm.board.hw_version                = "1.0.0";
         g_nm.board.model                     = BOARD_MODEL;
-        g_nm.activate                        = false;
-        g_nm.market_enable                   = true;
-        g_nm.board.licence                   = nvs_config_get_string(MINER_LICENCE_NAMESPACE, JSON_SPIFFS_KEY_LICENCE, "");
-        g_nm.screen.orientation              = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREEN_ORIENT, false);
-        g_nm.screen.refresh_interval         = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
+
+        g_nm.screen.orientation              = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREEN_ORIENT, false);
+        g_nm.screen.refresh_interval         = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
         g_nm.screen.refresh_interval         = (g_nm.screen.refresh_interval < 1) ? 1 : g_nm.screen.refresh_interval;
-        g_nm.screen.sleep_timeout            = nvs_config_get_u16(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREENTIMEOUT, DEFAULT_SCREEN_TIMEOUT);
-        g_nm.screen.brightness               = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREEN_BRIGHTNESS, DEFAULT_SCREEN_BRIGHTNESS);
-        g_nm.screen.auto_brightness_adjust   = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_AUTO_BRIGHTNESS, false);
+        g_nm.screen.sleep_timeout            = nvs_config_get_u16(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREENTIMEOUT, DEFAULT_SCREEN_TIMEOUT);
+        g_nm.screen.brightness               = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREEN_BRIGHTNESS, DEFAULT_SCREEN_BRIGHTNESS);
+        g_nm.screen.auto_brightness_adjust   = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_AUTO_BRIGHTNESS, false);
         
         g_nm.screen.active                   = true;
         g_nm.connection.client_connected     = false;
 
         g_nm.timezone                        = 0.0f;
-        g_nm.save_stats                      = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_STATS2NV, DEFAULT_SAVESTATS);
-        g_nm.need_cfg                        = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, false);
-        g_nm.led_enable                      = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_LED_ENABLE, true);
-        nvs_config_set_u32(MINER_STATUS_NAMESPACE, JSON_SPIFFS_KEY_BLOCK_HITS, 0);//clear block hits after v0.5.03 for some wrong data
-        if(g_nm.save_stats){
-           
-        }
-        else{
+        
+        g_nm.need_cfg                        = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, false);
 
-        }
-        g_nm.market    = (g_nm.market_enable) ? new MarketClass(MARKET_HOST, MARKET_PORT, MARKET_URL, "BTC_USDT") : NULL;
+        g_nm.market    = new MarketClass(MARKET_HOST, MARKET_PORT, MARKET_URL, "BTC_USDT");
         nvs_init_flag = true;
     }
     
-    g_nm.connection.wifi.conn_param.ssid = nvs_config_get_string(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WIFISSID, DEFAULT_SSID);
-    g_nm.connection.wifi.conn_param.pwd  = nvs_config_get_string(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WIFIPSWD, DEFAULT_WIFIPW);
+    g_nm.connection.wifi.conn_param.ssid = nvs_config_get_string(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WIFISSID, DEFAULT_SSID);
+    g_nm.connection.wifi.conn_param.pwd  = nvs_config_get_string(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WIFIPSWD, DEFAULT_WIFIPW);
     return true;
 }

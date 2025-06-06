@@ -71,13 +71,6 @@ bool wifi_config(bool blocking){
     WiFiManagerParameter tb_scr_sleep(JSON_SPIFFS_KEY_SCREENTIMEOUT, "Screen sleep time out, second (0s for always on)", String(g_nm.screen.sleep_timeout).c_str(), 4);
     WiFiManagerParameter tb_scr_brightness(JSON_SPIFFS_KEY_SCREEN_BRIGHTNESS, "Initial screen brightnes(0~100)", String(g_nm.screen.brightness).c_str(), 3);
 
-    char checkboxParams[24] = "type=\"checkbox\"";
-    if (g_nm.save_stats){
-        strcat(checkboxParams, " checked");
-    }
-    WiFiManagerParameter ck_save_stats(JSON_SPIFFS_KEY_STATS2NV, "Save uptime, best diff, shares in nvs", "T", 2, checkboxParams, WFM_LABEL_AFTER);
-
-
     char checkboxOrient[24] = "type=\"checkbox\"";
     if (g_nm.screen.orientation){
         strcat(checkboxOrient, " checked");
@@ -85,12 +78,6 @@ bool wifi_config(bool blocking){
     WiFiManagerParameter ck_screen_orient(JSON_SPIFFS_KEY_SCREEN_ORIENT, "Rotate screen", "T", 2, checkboxOrient, WFM_LABEL_AFTER);
 
 
-
-    char checkboxMarket[24] = "type=\"checkbox\"";
-    if (g_nm.market_enable){
-        strcat(checkboxMarket, " checked");
-    }
-    WiFiManagerParameter ck_btc_price(JSON_SPIFFS_KEY_MARKET_ENABLE, "BTC price update from market", "T", 2, checkboxMarket, WFM_LABEL_AFTER);
 
 #if defined(TFT_DISPLAY) || defined(OLED_DISPLAY)
     wm.addParameter(&tb_ui_refresh_intv);
@@ -100,14 +87,9 @@ bool wifi_config(bool blocking){
     wm.addParameter(&tb_scr_sleep);
     wm.addParameter(&tb_scr_brightness);
 #endif
-    wm.addParameter(&ck_save_stats);
     wm.addParameter(&ck_screen_orient);
-    wm.addParameter(&ck_btc_price);
-
     wm.erase(); // Clear previous settings
-
     wm.setConfigPortalBlocking(blocking);
-
     if(wm.startConfigPortal(DEFAULT_CFG_AP_SSID, NULL)){
         //Could be break forced after edditing, so save new config
 
@@ -328,10 +310,6 @@ static bool wifi_connecet(){
         }
     } 
 
-    // WiFi.setSleep(false);
-
-
-
     LOG_I("--------------------------------------------------");
     LOG_I("IP               : %s ", WiFi.localIP().toString().c_str());
     LOG_I("DNS              : %s, %s", WiFi.dnsIP(0).toString().c_str(), WiFi.dnsIP(1).toString().c_str());
@@ -386,19 +364,19 @@ static void wait_wifi_config_from_uart_thread_entry(void *args){
 
             if(json_config.containsKey("ssid")){
                 g_nm.connection.wifi.conn_param.ssid = json_config["ssid"].as<const char*>();
-                nvs_config_set_string(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WIFISSID, g_nm.connection.wifi.conn_param.ssid.c_str());
+                nvs_config_set_string(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WIFISSID, g_nm.connection.wifi.conn_param.ssid.c_str());
                 LOG_I("Save Wifi SSID: %s", g_nm.connection.wifi.conn_param.ssid.c_str());
                 config_flg = config_flg | 0x01;
             }
             if(json_config.containsKey("password")){
                 g_nm.connection.wifi.conn_param.pwd = json_config["password"].as<const char*>();
-                nvs_config_set_string(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WIFIPSWD, g_nm.connection.wifi.conn_param.pwd.c_str());
+                nvs_config_set_string(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WIFIPSWD, g_nm.connection.wifi.conn_param.pwd.c_str());
                 LOG_I("Save Wifi Password: %s", g_nm.connection.wifi.conn_param.pwd.c_str());
                 config_flg = config_flg | 0x02;
             }
             // if(json_config.containsKey("address")){
             //     g_nm.connection.stratum_primary.user = json_config["address"].as<const char*>();
-            //     nvs_config_set_string(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WALLET_PRI, g_nm.connection.stratum_primary.user.c_str());
+            //     nvs_config_set_string(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_WALLET_PRI, g_nm.connection.stratum_primary.user.c_str());
             //     LOG_I("Save Wallet Address: %s", g_nm.connection.stratum_primary.user.c_str());
             //     config_flg = config_flg | 0x04;
             // }

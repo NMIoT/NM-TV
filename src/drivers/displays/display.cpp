@@ -692,7 +692,6 @@ static void ui_layout_init(void){
 
 static void ui_update_loading_string(String str, uint32_t color, bool prgress_update) {
     static uint8_t progress = 0, progress_total = 8;
-    if(g_nm.market_enable) progress_total = 10;
 
     lv_color_t font_color = lv_color_hex(color);
     if (lb_lpage_details_str == NULL){
@@ -748,7 +747,7 @@ static void ui_update_loading_string(String str, uint32_t color, bool prgress_up
       lv_obj_set_style_text_color(lb_version_check, ck_color, LV_PART_MAIN); 
 
       ck_color = lv_color_hex(0xFFFFFF);
-      reminder = "https://flash.nmminer.com";
+      reminder = "https://flash.nmiot.com";
       width = lv_txt_get_width(reminder.c_str(), strlen(reminder.c_str()), lb_loading_version_check_font, 0, LV_TEXT_FLAG_NONE);
       lv_obj_set_width(lb_flash_addr, (width > SCREEN_WIDTH) ? SCREEN_WIDTH : width);
       lv_label_set_text( lb_flash_addr, reminder.c_str());
@@ -989,7 +988,7 @@ void ui_switch_next_page_cb(){
 #else
   g_page_index = (g_page_index == PAGE_MINER) ? PAGE_CLOCK : PAGE_MINER;//在miner页面和clock页面之间切换
 #endif
-  uint8_t default_interval = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
+  uint8_t default_interval = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
 
   g_nm.screen.refresh_interval = (g_page_index == PAGE_CLOCK || g_page_index == PAGE_GAUGE) ? 1 : default_interval;
 

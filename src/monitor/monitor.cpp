@@ -64,12 +64,6 @@ void monitor_thread_entry(void *args){
             delay(1000);
             continue;
         }
-        
-        //定时保存状态到NVS
-        if(g_nm.save_stats){
-            static uint32_t last_save_time = 0;
-          
-        }
     }
     LOG_W("%s thread exit", __FUNCTION__);
     delay(1000);

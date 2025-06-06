@@ -10,12 +10,9 @@
 #include "timezone.h"
 #include "helper.h"
 
-static String       taskName = "";
-
-TaskHandle_t task_btn = NULL, task_market = NULL, task_monitor = NULL, task_lvgl_tick = NULL, task_ui_refresh = NULL;
-
-//全局抽象数据结构
-nm_sal_t g_nm;
+static String  taskName = "";
+TaskHandle_t   task_btn = NULL, task_market = NULL, task_monitor = NULL, task_lvgl_tick = NULL, task_ui_refresh = NULL;
+nm_sal_t       g_nm;
 
 void setup() {
   /********************************************************** INIT SERIAL *****************************************************************/
@@ -45,7 +42,7 @@ void setup() {
   /*********************************************************** FORCE CONFIG **************************************************************/
   if(g_nm.need_cfg){
     xSemaphoreGive(g_nm.connection.wifi.force_cfg_xsem);
-    nvs_config_set_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, false);
+    nvs_config_set_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, false);
     while(!wifi_config(true)){
       delay(1000);
     }

@@ -8,7 +8,7 @@
 #define TOUCH_THRESHOLD 90
 
 void force_cfg_cb(void){
-  nvs_config_set_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, true);
+  nvs_config_set_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, true);
   delay(500);
   ESP.restart();
 }

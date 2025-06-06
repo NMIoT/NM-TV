@@ -4,23 +4,15 @@
 #include "monitor.h"
 
 
-#define MINER_SETTINGS_NAMESPACE	  	"miner_settings" 
-#define MINER_STATUS_NAMESPACE	  	    "miner_status" 
-#define MINER_LICENCE_NAMESPACE	      	"dev_signature"
+#define NMTV_SETTINGS_NAMESPACE	  	"miner_settings" 
+// #define MINER_STATUS_NAMESPACE	  	    "miner_status" 
+// #define MINER_LICENCE_NAMESPACE	      	"dev_signature"
 
 #define DEFAULT_CFG_AP_SSID				"nmap-2.4g"
 // #define DEFAULT_CFG_AP_WIFIPW			"12345678"
 
 #define DEFAULT_SSID					"NMTech-2.4G"
 #define DEFAULT_WIFIPW					"NMMiner2048"
-
-#define DEFAULT_POOLURL_PRI			    "stratum+tcp://public-pool.io:21496"
-#define DEFAULT_POOLPASS_PRI			"x"
-#define DEFAULT_POOLURL_FB			    "stratum+tcp://pool.tazmining.ch:33333"
-#define DEFAULT_POOLPASS_FB 			"x"
-
-#define DEFAULT_WALLETID_PRI			"18dK8EfyepKuS74fs27iuDJWoGUT4rPto1"
-#define DEFAULT_WALLETID_FB 			"18dK8EfyepKuS74fs27iuDJWoGUT4rPto1"
 
 #define DEFAULT_TIMEZONE				"8"
 #define DEFAULT_SAVESTATS				false
@@ -32,29 +24,16 @@
 #define JSON_SPIFFS_KEY_WIFISSID		"WifiSSID"
 #define JSON_SPIFFS_KEY_WIFIPSWD 		"WiFiPSWD"
 
-#define JSON_SPIFFS_KEY_WALLET_PRI    	"btcWallet"
-#define JSON_SPIFFS_KEY_POOLURL_PRI 	"PoolUrl1"
-#define JSON_SPIFFS_KEY_POOLPASS_PRI	"poolPassword1"
-
-#define JSON_SPIFFS_KEY_WALLET_FB    	"btcWallet2"
-#define JSON_SPIFFS_KEY_POOLURL_FB   	"PoolUrl2"
-#define JSON_SPIFFS_KEY_POOLPASS_FB	    "poolPassword2"
-
 #define JSON_SPIFFS_KEY_TIMEZONE		"utcZone"
 #define JSON_SPIFFS_KEY_REFRESHINTERV  	"RefreshInterval"
 #define JSON_SPIFFS_KEY_SCREENTIMEOUT	"ScreenTimeout"
 #define JSON_SPIFFS_KEY_SCREEN_BRIGHTNESS "Brightness"
-// #define JSON_SPIFFS_KEY_SSL_ENABLE  	"SSLConnection"
 #define JSON_SPIFFS_KEY_SCREEN_ORIENT  	"ScreenOrient"
 #define JSON_SPIFFS_KEY_STATS2NV		"saveStatsToNVS"
 #define JSON_SPIFFS_KEY_DEVCIE_CODE		"DeviceCode"
 #define JSON_SPIFFS_KEY_LICENCE			"licence"
 
 #define JSON_SPIFFS_KEY_MARKET_ENABLE  	"MarketEnable"//btc price
-#define JSON_SPIFFS_KEY_SHARES_ACC  	"ShareAcc"
-#define JSON_SPIFFS_KEY_SHARES_REJ  	"ShareRej"
-#define JSON_SPIFFS_KEY_BLOCK_HITS   	"BlockHit"
-#define JSON_SPIFFS_KEY_DIFF_BEST   	"DiffBest"
 #define JSON_SPIFFS_KEY_UPTIME      	"Uptime"
 
 #define JSON_SPIFFS_KEY_NEED_CFG      	"NeedConfig"
