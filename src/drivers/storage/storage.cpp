@@ -322,11 +322,7 @@ bool load_g_nm(void){
         g_nm.board.hw_version                = "1.0.0";
         g_nm.board.model                     = BOARD_MODEL;
         g_nm.activate                        = false;
-#if defined(HAS_MARKET_FEATURE)
-        g_nm.market_enable                   = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_MARKET_ENABLE, true);
-#else
-        g_nm.market_enable                   = false;
-#endif
+        g_nm.market_enable                   = true;
         g_nm.board.licence                   = nvs_config_get_string(MINER_LICENCE_NAMESPACE, JSON_SPIFFS_KEY_LICENCE, "");
         g_nm.screen.orientation              = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREEN_ORIENT, false);
         g_nm.screen.refresh_interval         = nvs_config_get_u8(MINER_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);

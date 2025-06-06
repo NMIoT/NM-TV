@@ -161,7 +161,7 @@ const lv_img_dsc_t loading_img = {
         .h = SCREEN_HEIGHT,  
     },
     .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)loading_img_array, 
+    .data = (const uint8_t *)clock_img_array, 
 };
 
 const lv_img_dsc_t config_img = {
@@ -173,7 +173,7 @@ const lv_img_dsc_t config_img = {
         .h = SCREEN_HEIGHT,  
     },
     .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)config_img_array, 
+    .data = (const uint8_t *)clock_img_array, 
 };
 
 const lv_img_dsc_t miner_img = {
@@ -185,7 +185,7 @@ const lv_img_dsc_t miner_img = {
         .h = SCREEN_HEIGHT,  
     },
     .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)miner_img_array, 
+    .data = (const uint8_t *)clock_img_array, 
 };
 
 const lv_img_dsc_t clock_img = {
@@ -540,19 +540,7 @@ static void ui_layout_init(void){
   lv_obj_set_style_text_color(lb_mpage_rssi_value, font_color, LV_PART_MAIN); 
   lv_label_set_long_mode(lb_mpage_rssi_value, LV_LABEL_LONG_DOT);
   lv_obj_align( lb_mpage_rssi_value, LV_ALIGN_TOP_LEFT, lb_wifi_rssi_coord[0], lb_wifi_rssi_coord[1]);  
-#if !defined(ESP32_2432S028R_7789) && !defined(ESP32_2432S028R_9341) && !defined(ESP32_2432S024)
-  // symbol price                              
-  if(g_nm.market_enable && g_nm.market != NULL){
-    font_color = lv_color_hex(0xEE7D30);
-    lb_mpage_price_symbol   = lv_label_create( miner_page );
-    lv_obj_set_width(lb_mpage_price_symbol, 30); 
-    lv_label_set_text( lb_mpage_price_symbol, "\xEF\x94\xBD");
-    lv_obj_set_style_text_font(lb_mpage_price_symbol, lb_price_symbol_font, LV_PART_MAIN);
-    lv_obj_set_style_text_color(lb_mpage_price_symbol, font_color, LV_PART_MAIN); 
-    lv_label_set_long_mode(lb_mpage_price_symbol, LV_LABEL_LONG_DOT);
-    lv_obj_align( lb_mpage_price_symbol, LV_ALIGN_TOP_LEFT, lb_price_symbol_coord[0], lb_price_symbol_coord[1]); 
-  }
-#endif
+
   //btc price
   font_color = lv_color_hex(0xFFFFFF);
   lb_mpage_price_value   = lv_label_create( miner_page );

@@ -88,25 +88,21 @@ void setup() {
   }
   delete tz;
   /************************************************************** CREATE MARKET THREAD ***************************************************/
-#if defined(HAS_MARKET_FEATURE)
-  if(g_nm.market_enable){
-    taskName = "(market)";
-    xTaskCreatePinnedToCore(market_thread_entry, taskName.c_str(), 1024*4, (void*)taskName.c_str(), TASK_PRIORITY_MARKET, &task_market, MarketTaskCore);
-    while (!g_nm.market->updated){
-      static uint32_t start = millis();
-      if(g_nm.market->istimeout) {
-        delay(2000);
-        break;
-      }
-
-      if(millis() - start > 1000*1){
-        start = millis();
-        LOG_W("Waiting for market data %ds...", g_nm.market->timeout/1000);
-      }
-      delay(10);
+  taskName = "(market)";
+  xTaskCreatePinnedToCore(market_thread_entry, taskName.c_str(), 1024*4, (void*)taskName.c_str(), TASK_PRIORITY_MARKET, &task_market, MarketTaskCore);
+  while (!g_nm.market->updated){
+    static uint32_t start = millis();
+    if(g_nm.market->istimeout) {
+      delay(2000);
+      break;
     }
+
+    if(millis() - start > 1000*1){
+      start = millis();
+      LOG_W("Waiting for market data %ds...", g_nm.market->timeout/1000);
+    }
+    delay(10);
   }
-#endif
   /************************************************************** CREATE MONITOR THREAD ***************************************************/
   taskName = "(monitor)";
   xTaskCreatePinnedToCore(monitor_thread_entry, taskName.c_str(), 1024*3, (void*)taskName.c_str(), TASK_PRIORITY_MONITOR, &task_monitor, MonitorTaskCore);

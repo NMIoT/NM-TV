@@ -4,7 +4,7 @@
 #include "storage.h"
 #include "global.h"
 
-#define TOUCH_PIN T9
+#define TOUCH_PIN       T9
 #define TOUCH_THRESHOLD 90
 
 void force_cfg_cb(void){
@@ -37,7 +37,7 @@ TouchEventType checkTouchEvent() {
     static uint8_t longPressCnt = 0;
     static uint32_t lastTouchTime = 0;
     longPressCnt = (millis() - lastTouchTime > 1000*5) ? 0 : longPressCnt; 
-    if(touch_cnt - lastTouchcnt>= SINGLE_CLICK_TOUCH_MIN_CNT) {
+    if(touch_cnt - lastTouchcnt >= SINGLE_CLICK_TOUCH_MIN_CNT) {
       lastTouchTime = millis();
       event = TOUCH_SINGLE;
       lastTouchcnt = touch_cnt;
@@ -58,7 +58,7 @@ void button_thread_entry(void *args){
   LOG_I("%s thread started on core %d...", name, xPortGetCoreID());
   // free(name);
 
-  touchAttachInterrupt(TOUCH_PIN, onTouch, TOUCH_THRESHOLD); // 设置触发阈值为 90
+  touchAttachInterrupt(TOUCH_PIN, onTouch, TOUCH_THRESHOLD); 
 
   while (true){
     TouchEventType event = checkTouchEvent();
@@ -67,12 +67,15 @@ void button_thread_entry(void *args){
             LOG_I("Single touch detected");
             ui_switch_next_page_cb();
             break;
+        case TOUCH_DOUBLE:
+            LOG_I("Double touch detected");
+            break;
         case TOUCH_LONG:
             LOG_I("Long touch detected");
             force_cfg_cb();
             break;
         case TOUCH_NONE:
-
+            LOG_W("No touch event detected");
             break;
     }
     delay(30);

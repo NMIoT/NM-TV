@@ -126,9 +126,7 @@ void market_thread_entry(void *args){
     g_nm.market->connect();
        
     while(true){
-        delay(50);
-
-        if(market_exit) break;
+        delay(250);
 
         if(g_nm.connection.wifi.status_param.status != WL_CONNECTED) continue;
         
