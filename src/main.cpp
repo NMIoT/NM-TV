@@ -4,7 +4,7 @@
 #include "display.h"
 #include "button.h"
 #include "storage.h"
-#include "market.h"
+#include "nmapi.h"
 #include "github.h"
 #include "esp32/clk.h"
 #include "timezone.h"
@@ -15,6 +15,7 @@ TaskHandle_t   task_btn = NULL, task_market = NULL, task_monitor = NULL, task_lv
 nm_sal_t       g_nm;
 
 void setup() {
+  enable_usb_uart();
   /********************************************************** INIT SERIAL *****************************************************************/
   delay(1000);
   logo_print();
@@ -85,21 +86,8 @@ void setup() {
   }
   delete tz;
   /************************************************************** CREATE MARKET THREAD ***************************************************/
-  taskName = "(market)";
-  xTaskCreatePinnedToCore(market_thread_entry, taskName.c_str(), 1024*4, (void*)taskName.c_str(), TASK_PRIORITY_MARKET, &task_market, MarketTaskCore);
-  while (!g_nm.market->updated){
-    static uint32_t start = millis();
-    if(g_nm.market->istimeout) {
-      delay(2000);
-      break;
-    }
-
-    if(millis() - start > 1000*1){
-      start = millis();
-      LOG_W("Waiting for market data %ds...", g_nm.market->timeout/1000);
-    }
-    delay(10);
-  }
+  taskName = "(nmapi)";
+  xTaskCreatePinnedToCore(nmapi_thread_entry, taskName.c_str(), 1024*20, (void*)taskName.c_str(), TASK_PRIORITY_MARKET, &task_market, MarketTaskCore);
   /************************************************************** CREATE MONITOR THREAD ***************************************************/
   taskName = "(monitor)";
   xTaskCreatePinnedToCore(monitor_thread_entry, taskName.c_str(), 1024*3, (void*)taskName.c_str(), TASK_PRIORITY_MONITOR, &task_monitor, MonitorTaskCore);

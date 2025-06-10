@@ -4,7 +4,7 @@
 #include "global.h"
 #include "logger.h"
 #include "helper.h"
-#include "market.h"
+#include "nmapi.h"
 
 char * nvs_config_get_string(const char *ns, const char * key, const char * default_value){
     nvs_handle handle;
@@ -325,7 +325,7 @@ bool load_g_nm(void){
         
         g_nm.need_cfg                        = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, false);
 
-        g_nm.market    = new MarketClass(MARKET_HOST, MARKET_PORT, MARKET_URL, "BTC_USDT");
+        // g_nm.market    = new MarketClass(MARKET_HOST, MARKET_PORT, MARKET_URL, "BTC_USDT");
         nvs_init_flag = true;
     }
     

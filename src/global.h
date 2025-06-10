@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include "connection.h"
 #include "device.h"
-#include "market.h"
+#include "nmapi.h"
 
 
 #define CURRENT_VERSION     "v0.0.01"
@@ -70,7 +70,7 @@ typedef struct{
     connect_info_t      connection;
     float               timezone;
     bool                tz_updated;
-    MarketClass         *market;
+    // MarketClass         *market;
     bool                need_cfg;
 }nm_sal_t;
 

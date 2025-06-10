@@ -75,7 +75,7 @@ void button_thread_entry(void *args){
             force_cfg_cb();
             break;
         case TOUCH_NONE:
-            LOG_W("No touch event detected");
+            // LOG_W("No touch event detected");
             break;
     }
     delay(30);
