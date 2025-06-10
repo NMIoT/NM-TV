@@ -51,6 +51,7 @@ typedef struct{
 
 typedef struct{
     String                  name;
+    int                     id; 
     String                  symbol;
     String                  slug;
     String                  logo_url;

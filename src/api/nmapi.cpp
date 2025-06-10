@@ -33,6 +33,30 @@ String NMIoTAPIClass::get_crypto_rank_price(int start, int limit, const String &
     return response;
 }
 
+
+String NMIoTAPIClass::get_crypto_info(const String &slug){
+    String formatted_slug = slug;
+    formatted_slug.replace(" ", ""); // Replace spaces with hyphens for slug formatting
+    String url = "/crypto/info?slug=" + formatted_slug;
+    LOG_D("Requesting: %s", url.c_str());
+
+    int httpCode = this->_httpclient->get(url);
+    if (httpCode != 0) {
+        LOG_E("HTTP GET failed, code: %d", httpCode);
+        return "";
+    }
+
+    int status = this->_httpclient->responseStatusCode();
+    if (status != 200) {
+        LOG_E("HTTP response status: %d", status);
+        return "";
+    }
+
+    String response = this->_httpclient->responseBody();
+    return response;
+}
+
+
 void nmapi_thread_entry(void *args){
     char *name = (char*)malloc(20);
     strcpy(name, (char*)args);
@@ -46,80 +70,119 @@ void nmapi_thread_entry(void *args){
         return;
     }
 
+    uint8_t   fail_count = 0;
+    uint32_t  thread_cnt = 0;
     while(true){
-        delay(1000*10);
+        DynamicJsonDocument doc    = DynamicJsonDocument(1024 * 32);
+        DeserializationError error = DeserializationError::Ok;
+        String json = "";
+        delay(1000);
+
         // Check if WiFi is connected or not
         if (WiFi.status() != WL_CONNECTED) {
             LOG_E("WiFi still not connected, wait and retry...");
             continue;
         }
 
-        // If WiFi is connected, proceed to get crypto rank price data
-        String json = api->get_crypto_rank_price(1, 20, "USDT");
-        LOG_D("%s", json.c_str());
-        static uint8_t fail_count = 0;
-        if(json.isEmpty()) {
-            fail_count++;
-            if (fail_count >= 2) {
+        // update crypto rank price data every 60s
+        if(thread_cnt % 60 == 0) {
+            json = api->get_crypto_rank_price(1, 20, "USDT");
+            if(json.isEmpty()) {
                 delete api;
                 api = new NMIoTAPIClass();
-                fail_count = 0;
+                LOG_E("Failed to get crypto rank price data");
+                continue;
             }
-            LOG_E("Failed to get crypto rank price data");
-            continue;
-        } else {
-            fail_count = 0; // Reset fail count on success
+
+            // Deserialize the JSON response
+            doc.clear();
+            error = deserializeJson(doc, json);
+            if (error) {
+                LOG_E("deserializeJson() failed: %s", error.c_str());
+                continue;
+            }
+        
+            LOG_W("| %6s | %-12s | %4s | %10s | %15s  | %6s  | %6s  |   %15s        | %s ", "ID", "Slug", "Rank", "Price(USD)", "MarketCap(USD)", "1h ", "1d ", "Last Updated", "Logo URL");
+            for (JsonObject coin : doc["data"].as<JsonArray>()) {
+                const char* name           = coin.containsKey("name") ? coin["name"].as<const char*>() : "unknown";
+                JsonObject quote           = coin["quote"].containsKey("USDT") ? coin["quote"]["USDT"] : JsonObject();
+
+                g_nm.coin_map[name].price.realtime = quote.containsKey("price") ? quote["price"].as<double>() : 0.0;
+                g_nm.coin_map[name].rank           = coin.containsKey("cmc_rank") ? coin["cmc_rank"].as<int>() : -1;
+                g_nm.coin_map[name].name           = name;
+                g_nm.coin_map[name].id             = coin.containsKey("id") ? coin["id"].as<int>() : -1;
+                g_nm.coin_map[name].symbol         = coin.containsKey("symbol") ? coin["symbol"].as<const char*>() : "unknown";
+                g_nm.coin_map[name].slug           = coin.containsKey("slug") ? coin["slug"].as<const char*>() : "unknown";
+                g_nm.coin_map[name].price.volume_24h = quote.containsKey("volume_24h") ? quote["volume_24h"].as<double>() : 0.0;
+                g_nm.coin_map[name].price.volume_change_24h  = quote.containsKey("volume_change_24h") ? quote["volume_change_24h"].as<double>() : 0.0;
+                g_nm.coin_map[name].price.market_cap         = quote.containsKey("market_cap") ? quote["market_cap"].as<double>() : 0.0;
+                g_nm.coin_map[name].price.percent_change_1h  = quote.containsKey("percent_change_1h") ? quote["percent_change_1h"].as<double>() : 0.0;
+                g_nm.coin_map[name].price.percent_change_24h = quote.containsKey("percent_change_24h") ? quote["percent_change_24h"].as<double>() : 0.0;
+                g_nm.coin_map[name].price.percent_change_7d  = quote.containsKey("percent_change_7d") ? quote["percent_change_7d"].as<double>() : 0.0;
+                g_nm.coin_map[name].price.percent_change_30d = quote.containsKey("percent_change_30d") ? quote["percent_change_30d"].as<double>() : 0.0;
+                g_nm.coin_map[name].price.percent_change_60d = quote.containsKey("percent_change_60d") ? quote["percent_change_60d"].as<double>() : 0.0;
+                g_nm.coin_map[name].price.percent_change_90d = quote.containsKey("percent_change_90d") ? quote["percent_change_90d"].as<double>() : 0.0;
+                g_nm.coin_map[name].price.last_updated       = coin.containsKey("last_updated") ? coin["last_updated"].as<const char*>() : "unknown";
+
+                LOG_I("| %6d | %-12s | %4d | %10.2f | %16.1f | %6.2f%% | %6.2f%% | %15s | %s ", 
+                    g_nm.coin_map[name].id,
+                    g_nm.coin_map[name].slug,
+                    g_nm.coin_map[name].rank,
+                    g_nm.coin_map[name].price.realtime,
+                    g_nm.coin_map[name].price.market_cap,
+                    g_nm.coin_map[name].price.percent_change_1h,
+                    g_nm.coin_map[name].price.percent_change_24h,
+                    g_nm.coin_map[name].price.last_updated.c_str(),
+                    g_nm.coin_map[name].logo_url.c_str()
+                );
+            }
+            doc.clear();
+
+            /********************update crypto logo URLs*********************/
+            for(auto &coin : g_nm.coin_map) {
+                delay(100); // Add a small delay to avoid overwhelming the API
+                if(coin.second.logo_url != "") {
+                    LOG_D("Coin: %s already has logo URL: %s", coin.second.name.c_str(), coin.second.logo_url.c_str());
+                    continue; // Skip if logo URL is already set
+                }
+
+                // Fetch logo URL from the API
+                json = api->get_crypto_info(coin.second.slug);
+                if(json.isEmpty()) {
+                    delete api;
+                    api = new NMIoTAPIClass();
+                    LOG_E("Failed to get crypto rank price data");
+                    continue;
+                }
+                doc.clear();
+                error = deserializeJson(doc, json);
+                if (error) {
+                    LOG_E("deserializeJson() failed: %s", error.c_str());
+                    continue;
+                }
+                // Process the JSON response to extract logo URLs
+                for (JsonPair kv : doc["data"].as<JsonObject>()) {
+                    JsonObject info     = kv.value().as<JsonObject>();
+                    String    logo_url  = info.containsKey("logo") ? info["logo"].as<const char*>() : "";
+
+                    auto it = g_nm.coin_map.find(coin.second.name);
+                    if (it != g_nm.coin_map.end()) {
+                        it->second.logo_url = logo_url;
+                    } else {
+                        LOG_W("coin_map not found for name: %s", coin.second.name.c_str());
+                    }
+                }
+            }
         }
+        // update crypto rank info data every 60s
+        if((thread_cnt + 10) % (60*1) == 0) {
 
-        // Deserialize the JSON response
-        DynamicJsonDocument doc = DynamicJsonDocument(1024 * 32);
-        DeserializationError error = deserializeJson(doc, json);
-        if (error) {
-            LOG_E("deserializeJson() failed: %s", error.c_str());
-            continue;
         }
-
-        LOG_W("| %-12s | %6s | %12s | %15s  | %6s  | %6s  |", "Name", "Rank", "Price(USD)", "MarketCap(USD)", "1h ", "1d ");
-        for (JsonObject coin : doc["data"].as<JsonArray>()) {
-            const char* name           = coin.containsKey("name") ? coin["name"].as<const char*>() : "unknown";
-            JsonObject quote           = coin["quote"].containsKey("USDT") ? coin["quote"]["USDT"] : JsonObject();
-
-            g_nm.coin_map[name].price.realtime = quote.containsKey("price") ? quote["price"].as<double>() : 0.0;
-            g_nm.coin_map[name].rank           = coin.containsKey("cmc_rank") ? coin["cmc_rank"].as<int>() : -1;
-            g_nm.coin_map[name].name           = name;
-            g_nm.coin_map[name].symbol         = coin.containsKey("symbol") ? coin["symbol"].as<const char*>() : "unknown";
-            g_nm.coin_map[name].slug           = coin.containsKey("slug") ? coin["slug"].as<const char*>() : "unknown";
-            g_nm.coin_map[name].logo_url       = coin.containsKey("logo_url") ? coin["logo_url"].as<const char*>() : "unknown";
-            g_nm.coin_map[name].price.volume_24h = quote.containsKey("volume_24h") ? quote["volume_24h"].as<double>() : 0.0;
-            g_nm.coin_map[name].price.volume_change_24h  = quote.containsKey("volume_change_24h") ? quote["volume_change_24h"].as<double>() : 0.0;
-            g_nm.coin_map[name].price.market_cap         = quote.containsKey("market_cap") ? quote["market_cap"].as<double>() : 0.0;
-            g_nm.coin_map[name].price.percent_change_1h  = quote.containsKey("percent_change_1h") ? quote["percent_change_1h"].as<double>() : 0.0;
-            g_nm.coin_map[name].price.percent_change_24h = quote.containsKey("percent_change_24h") ? quote["percent_change_24h"].as<double>() : 0.0;
-            g_nm.coin_map[name].price.percent_change_7d  = quote.containsKey("percent_change_7d") ? quote["percent_change_7d"].as<double>() : 0.0;
-            g_nm.coin_map[name].price.percent_change_30d = quote.containsKey("percent_change_30d") ? quote["percent_change_30d"].as<double>() : 0.0;
-            g_nm.coin_map[name].price.percent_change_60d = quote.containsKey("percent_change_60d") ? quote["percent_change_60d"].as<double>() : 0.0;
-            g_nm.coin_map[name].price.percent_change_90d = quote.containsKey("percent_change_90d") ? quote["percent_change_90d"].as<double>() : 0.0;
-            g_nm.coin_map[name].price.last_updated       = coin.containsKey("last_updated") ? coin["last_updated"].as<const char*>() : "unknown";
-
-
-            // double market_cap          = quote.containsKey("market_cap") ? quote["market_cap"].as<double>() : 0.0;
-            // double percent_change_1h   = quote.containsKey("percent_change_1h") ? quote["percent_change_1h"].as<double>() : 0.0;
-            // double percent_change_24h  = quote.containsKey("percent_change_24h") ? quote["percent_change_24h"].as<double>() : 0.0;
-            // double percent_change_7d   = quote.containsKey("percent_change_7d") ? quote["percent_change_7d"].as<double>() : 0.0;
-            // double percent_change_30d  = quote.containsKey("percent_change_30d") ? quote["percent_change_30d"].as<double>() : 0.0;
-            // double percent_change_60d  = quote.containsKey("percent_change_60d") ? quote["percent_change_60d"].as<double>() : 0.0;
-            // double percent_change_90d  = quote.containsKey("percent_change_90d") ? quote["percent_change_90d"].as<double>() : 0.0;
-
-            LOG_I("| %-12s | %6d | %12.2f | %16.1f | %6.2f%% | %6.2f%% |", 
-                g_nm.coin_map[name].symbol,
-                g_nm.coin_map[name].rank,
-                g_nm.coin_map[name].price.realtime,
-                g_nm.coin_map[name].price.market_cap,
-                g_nm.coin_map[name].price.percent_change_1h,
-                g_nm.coin_map[name].price.percent_change_24h);
+        //update weather forecast data every 15m
+        if((thread_cnt + 20) % (60*15) == 0) {
+            LOG_D("Fetching weather forecast data...");
         }
-        doc.clear();
-
+        thread_cnt++;
     }
     vTaskDelete(NULL);
 }
