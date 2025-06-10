@@ -6,8 +6,6 @@
 #include <ArduinoJson.h>
 
 
-
-
 class NMIoTAPIClass{
 private:
     WiFiClientSecure    _sslwifi;

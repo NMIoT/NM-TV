@@ -55,7 +55,8 @@ void nmapi_thread_entry(void *args){
         }
 
         // If WiFi is connected, proceed to get crypto rank price data
-        String json = api->get_crypto_rank_price(1, 10, "USDT");
+        String json = api->get_crypto_rank_price(1, 20, "USDT");
+        LOG_D("%s", json.c_str());
         static uint8_t fail_count = 0;
         if(json.isEmpty()) {
             fail_count++;
@@ -69,7 +70,7 @@ void nmapi_thread_entry(void *args){
         } else {
             fail_count = 0; // Reset fail count on success
         }
-        
+
         // Deserialize the JSON response
         DynamicJsonDocument doc = DynamicJsonDocument(1024 * 32);
         DeserializationError error = deserializeJson(doc, json);
@@ -81,21 +82,42 @@ void nmapi_thread_entry(void *args){
         LOG_W("| %-12s | %6s | %12s | %15s  | %6s  | %6s  |", "Name", "Rank", "Price(USD)", "MarketCap(USD)", "1h ", "1d ");
         for (JsonObject coin : doc["data"].as<JsonArray>()) {
             const char* name           = coin.containsKey("name") ? coin["name"].as<const char*>() : "unknown";
-            int cmc_rank               = coin.containsKey("cmc_rank") ? coin["cmc_rank"].as<int>() : -1;
-
             JsonObject quote           = coin["quote"].containsKey("USDT") ? coin["quote"]["USDT"] : JsonObject();
-            double price               = quote.containsKey("price") ? quote["price"].as<double>() : 0.0;
-            double market_cap          = quote.containsKey("market_cap") ? quote["market_cap"].as<double>() : 0.0;
-            double percent_change_1h   = quote.containsKey("percent_change_1h") ? quote["percent_change_1h"].as<double>() : 0.0;
-            double percent_change_24h  = quote.containsKey("percent_change_24h") ? quote["percent_change_24h"].as<double>() : 0.0;
-            double percent_change_7d   = quote.containsKey("percent_change_7d") ? quote["percent_change_7d"].as<double>() : 0.0;
-            double percent_change_30d  = quote.containsKey("percent_change_30d") ? quote["percent_change_30d"].as<double>() : 0.0;
-            double percent_change_60d  = quote.containsKey("percent_change_60d") ? quote["percent_change_60d"].as<double>() : 0.0;
-            double percent_change_90d  = quote.containsKey("percent_change_90d") ? quote["percent_change_90d"].as<double>() : 0.0;
 
-            LOG_I("| %-12s | %6d | %12.2f | %16.1f | %6.2f%% | %6.2f%% |", name, cmc_rank, price, market_cap, percent_change_1h, percent_change_24h);
+            g_nm.coin_map[name].price.realtime = quote.containsKey("price") ? quote["price"].as<double>() : 0.0;
+            g_nm.coin_map[name].rank           = coin.containsKey("cmc_rank") ? coin["cmc_rank"].as<int>() : -1;
+            g_nm.coin_map[name].name           = name;
+            g_nm.coin_map[name].symbol         = coin.containsKey("symbol") ? coin["symbol"].as<const char*>() : "unknown";
+            g_nm.coin_map[name].slug           = coin.containsKey("slug") ? coin["slug"].as<const char*>() : "unknown";
+            g_nm.coin_map[name].logo_url       = coin.containsKey("logo_url") ? coin["logo_url"].as<const char*>() : "unknown";
+            g_nm.coin_map[name].price.volume_24h = quote.containsKey("volume_24h") ? quote["volume_24h"].as<double>() : 0.0;
+            g_nm.coin_map[name].price.volume_change_24h  = quote.containsKey("volume_change_24h") ? quote["volume_change_24h"].as<double>() : 0.0;
+            g_nm.coin_map[name].price.market_cap         = quote.containsKey("market_cap") ? quote["market_cap"].as<double>() : 0.0;
+            g_nm.coin_map[name].price.percent_change_1h  = quote.containsKey("percent_change_1h") ? quote["percent_change_1h"].as<double>() : 0.0;
+            g_nm.coin_map[name].price.percent_change_24h = quote.containsKey("percent_change_24h") ? quote["percent_change_24h"].as<double>() : 0.0;
+            g_nm.coin_map[name].price.percent_change_7d  = quote.containsKey("percent_change_7d") ? quote["percent_change_7d"].as<double>() : 0.0;
+            g_nm.coin_map[name].price.percent_change_30d = quote.containsKey("percent_change_30d") ? quote["percent_change_30d"].as<double>() : 0.0;
+            g_nm.coin_map[name].price.percent_change_60d = quote.containsKey("percent_change_60d") ? quote["percent_change_60d"].as<double>() : 0.0;
+            g_nm.coin_map[name].price.percent_change_90d = quote.containsKey("percent_change_90d") ? quote["percent_change_90d"].as<double>() : 0.0;
+            g_nm.coin_map[name].price.last_updated       = coin.containsKey("last_updated") ? coin["last_updated"].as<const char*>() : "unknown";
+
+
+            // double market_cap          = quote.containsKey("market_cap") ? quote["market_cap"].as<double>() : 0.0;
+            // double percent_change_1h   = quote.containsKey("percent_change_1h") ? quote["percent_change_1h"].as<double>() : 0.0;
+            // double percent_change_24h  = quote.containsKey("percent_change_24h") ? quote["percent_change_24h"].as<double>() : 0.0;
+            // double percent_change_7d   = quote.containsKey("percent_change_7d") ? quote["percent_change_7d"].as<double>() : 0.0;
+            // double percent_change_30d  = quote.containsKey("percent_change_30d") ? quote["percent_change_30d"].as<double>() : 0.0;
+            // double percent_change_60d  = quote.containsKey("percent_change_60d") ? quote["percent_change_60d"].as<double>() : 0.0;
+            // double percent_change_90d  = quote.containsKey("percent_change_90d") ? quote["percent_change_90d"].as<double>() : 0.0;
+
+            LOG_I("| %-12s | %6d | %12.2f | %16.1f | %6.2f%% | %6.2f%% |", 
+                g_nm.coin_map[name].symbol,
+                g_nm.coin_map[name].rank,
+                g_nm.coin_map[name].price.realtime,
+                g_nm.coin_map[name].price.market_cap,
+                g_nm.coin_map[name].price.percent_change_1h,
+                g_nm.coin_map[name].price.percent_change_24h);
         }
-
         doc.clear();
 
     }

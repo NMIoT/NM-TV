@@ -4,7 +4,7 @@
 #include "connection.h"
 #include "device.h"
 #include "nmapi.h"
-
+#include <map>
 
 #define CURRENT_VERSION     "v0.0.01"
 #define MINER_WTDG_TIMEOUT  (1000*60*15) //15分钟看门狗
@@ -35,6 +35,30 @@ enum{
 };
 
 typedef struct{
+    double       realtime;
+    double       market_cap;
+    double       percent_change_1h;
+    double       percent_change_24h;
+    double       percent_change_7d;
+    double       percent_change_30d;
+    double       percent_change_60d;
+    double       percent_change_90d;
+    double       volume_24h;
+    double       volume_change_24h;
+    String      last_updated;
+}crypto_price_info_t;
+
+
+typedef struct{
+    String                  name;
+    String                  symbol;
+    String                  slug;
+    String                  logo_url;
+    crypto_price_info_t     price;
+    uint16_t                rank;
+}crypto_coin_info_t;
+
+typedef struct{
     String      fw_version;
     String      hw_version;
     String      fw_latest_release;
@@ -61,8 +85,8 @@ typedef struct{
     uint16_t  cnt;
 }screen_info_t;
 
-typedef String nm_ip_t;
-typedef String nm_status_t;
+typedef String             coin_name;
+typedef crypto_coin_info_t ccoin_info;
 
 typedef struct{
     board_info_t        board;
@@ -70,7 +94,7 @@ typedef struct{
     connect_info_t      connection;
     float               timezone;
     bool                tz_updated;
-    // MarketClass         *market;
+    std::map<coin_name, ccoin_info> coin_map;
     bool                need_cfg;
 }nm_sal_t;
 
