@@ -18,13 +18,13 @@
 #define UiTaskCore        1
 #define BtnTaskCore       0
 #define MarketTaskCore    0
-#define MonitorTaskCore   0
+#define MonitorTaskCore   1
 
 enum{
     // lowest priority
     TASK_PRIORITY_BTN = 1, 
-    TASK_PRIORITY_MARKET,
     TASK_PRIORITY_MONITOR, 
+    TASK_PRIORITY_MARKET,
     TASK_PRIORITY_CONNECT, 
     TASK_PRIORITY_LED, 
     TASK_PRIORITY_CONFIG_MONITOR,
@@ -54,7 +54,7 @@ typedef struct{
     int                     id; 
     String                  symbol;
     String                  slug;
-    String                  logo_url;
+    // String                  logo_url;
     crypto_price_info_t     price;
     uint16_t                rank;
 }crypto_coin_info_t;

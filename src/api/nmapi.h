@@ -8,15 +8,17 @@
 
 class NMIoTAPIClass{
 private:
-    WiFiClientSecure    _sslwifi;
-    HttpClient*         _httpclient;
+
 public:
-    NMIoTAPIClass();
+    NMIoTAPIClass(){
+
+    }
     ~NMIoTAPIClass(){
-        delete this->_httpclient;
+
     }
     String get_crypto_rank_price(int start, int limit, const String &convert = "USDT");
     String get_crypto_info(const String &slug = "bitcoin");
+    bool download_icon(int coin_id = 1);
 };
 
 void nmapi_thread_entry(void *args);

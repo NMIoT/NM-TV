@@ -88,6 +88,7 @@ void setup() {
   /************************************************************** CREATE MARKET THREAD ***************************************************/
   taskName = "(nmapi)";
   xTaskCreatePinnedToCore(nmapi_thread_entry, taskName.c_str(), 1024*20, (void*)taskName.c_str(), TASK_PRIORITY_MARKET, &task_market, MarketTaskCore);
+  delay(50);
   /************************************************************** CREATE MONITOR THREAD ***************************************************/
   taskName = "(monitor)";
   xTaskCreatePinnedToCore(monitor_thread_entry, taskName.c_str(), 1024*3, (void*)taskName.c_str(), TASK_PRIORITY_MONITOR, &task_monitor, MonitorTaskCore);

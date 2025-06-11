@@ -690,6 +690,7 @@ static void ui_layout_init(void){
   lv_obj_align( lb_clock_page_hr_unit, LV_ALIGN_TOP_RIGHT, lb_clock_hr_unit_coord[0], lb_clock_hr_unit_coord[1]); 
 }
 
+
 static void ui_update_loading_string(String str, uint32_t color, bool prgress_update) {
     static uint8_t progress = 0, progress_total = 8;
 
@@ -780,6 +781,27 @@ static void ui_miner_page_refresh(){
 }
 
 static void ui_clock_page_refresh(){
+// [I/NM] |      1 | bitcoin      |    1 |  109760.23 |  2181728885084.6 |  -0.03% |   0.10% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/1.png 
+// [I/NM] |   1027 | ethereum     |    2 |    2791.24 |   336964149198.0 |  -0.03% |   3.81% | 2025-06-11T02:16:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png 
+// [I/NM] |    825 | tether       |    3 |       1.00 |   155181610791.2 |   0.00% |   0.00% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/825.png 
+// [I/NM] |     52 | xrp          |    4 |       2.29 |   134531676655.8 |  -0.20% |  -1.06% | 2025-06-11T02:16:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/52.png 
+// [I/NM] |   1839 | bnb          |    5 |     669.75 |    94359160501.1 |  -0.08% |   0.65% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png 
+// [I/NM] |   5426 | solana       |    6 |     165.17 |    86731493151.6 |   0.58% |   3.41% | 2025-06-11T02:16:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png 
+// [I/NM] |   3408 | usd-coin     |    7 |       1.00 |    60985862568.7 |   0.02% |  -0.01% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png 
+// [I/NM] |     74 | dogecoin     |    8 |       0.20 |    29376408776.0 |   0.44% |   1.27% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/74.png 
+// [I/NM] |   1958 | tron         |    9 |       0.29 |    27462853689.3 |  -0.22% |   0.70% | 2025-06-11T02:16:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/1958.png 
+// [I/NM] |   2010 | cardano      |   10 |       0.71 |    25257494139.8 |   0.31% |   0.63% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/2010.png 
+
+
+
+
+
+
+
+
+
+
+
 
 }
 
