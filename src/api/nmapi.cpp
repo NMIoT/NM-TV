@@ -262,7 +262,7 @@ void nmapi_thread_entry(void *args){
                 g_nm.weather_realtime.cod = weather.containsKey("cod") ? weather["cod"].as<int>() : 0;
 
 
-                LOG_W("Weather in %s (%s): %.2f°C, %s, %s, Humidity: %.1f%%, Wind: %.1f m/s",
+                LOG_W("Weather in %s (%s): %.2f'C, %s, %s, Humidity: %.1f%%, Wind: %.1f m/s",
                     g_nm.weather_realtime.name.c_str(),
                     g_nm.weather_realtime.sys.country.c_str(),
                     g_nm.weather_realtime.main.temp,
@@ -336,7 +336,7 @@ void nmapi_thread_entry(void *args){
 
 
                 for(const auto &forecast_item : g_nm.weather_forecast.list) {
-                    LOG_W("Forecast for %s, %s: %.2f°C, %s, %s, Humidity: %.1f%%, Wind: %.1f m/s",
+                    LOG_W("Forecast for %s, %s: %.2f'C, %s, %s, Humidity: %.1f%%, Wind: %.1f m/s",
                         g_nm.weather_forecast.city.name.c_str(),
                         forecast_item.dt_txt.c_str(),
                         forecast_item.main.temp,
