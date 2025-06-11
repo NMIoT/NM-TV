@@ -31,6 +31,54 @@ String NMIoTAPIClass::get_crypto_rank_price(int start, int limit, const String &
     return response;
 }
 
+String NMIoTAPIClass::get_weather_realtime(const double &lat, const double &lon){
+    String url = "/v1/weather/realtime?lat=" + String(lat, 6) + "&lon=" + String(lon, 6);
+    LOG_D("Requesting: %s", url.c_str());
+    WiFiClientSecure    sslwifi;
+    sslwifi.setInsecure(); // Disable SSL certificate verification for testing purposes
+    HttpClient httpclient(sslwifi, NMAPI_HOST, NMAPI_PORT);
+
+    int httpCode = httpclient.get(url);
+    if (httpCode != 0) {
+        LOG_E("HTTP GET failed, code: %d", httpCode);
+        return "";
+    }
+
+    int status = httpclient.responseStatusCode();
+    if (status != 200) {
+        LOG_E("HTTP response status: %d", status);
+        return "";
+    }
+
+    String response = httpclient.responseBody();
+    return response;
+}
+
+String NMIoTAPIClass::get_weather_forecast(const double &lat, const double &lon, const size_t &cnt){
+    String url = "/v1/weather/forecast?lat=" + String(lat, 6) + "&lon=" + String(lon, 6) + "&cnt=" + String(cnt);
+    LOG_D("Requesting: %s", url.c_str());
+    WiFiClientSecure    sslwifi;
+    sslwifi.setInsecure(); // Disable SSL certificate verification for testing purposes
+    HttpClient httpclient(sslwifi, NMAPI_HOST, NMAPI_PORT);
+
+    int httpCode = httpclient.get(url);
+    if (httpCode != 0) {
+        LOG_E("HTTP GET failed, code: %d", httpCode);
+        return "";
+    }
+
+    int status = httpclient.responseStatusCode();
+    if (status != 200) {
+        LOG_E("HTTP response status: %d", status);
+        return "";
+    }
+
+    String response = httpclient.responseBody();
+    return response;
+}
+
+
+
  size_t NMIoTAPIClass::download_coin_icon(int coin_id, uint8_t *buf, size_t buf_size){ 
     if (!buf) {
         LOG_E("icon buffer is null");
@@ -102,7 +150,7 @@ void nmapi_thread_entry(void *args){
         }
 
         // update crypto rank price data every 60s
-        if(thread_cnt % 20 == 0) {
+        if(thread_cnt % 30 == 0) {
             json = api->get_crypto_rank_price(1, 10, "USDT");
             if(json.isEmpty()) {
                 LOG_E("Failed to get crypto rank price data");
@@ -154,29 +202,22 @@ void nmapi_thread_entry(void *args){
             }
             doc.clear();
 
+            
 
-            if(g_nm.coin_icon != NULL)continue; // If the icon buffer already exists, skip downloading it again
 
-            size_t png_max = 1024 * 5; // Set a maximum size for the icon buffer
-            g_nm.coin_icon = (uint8_t*)malloc(png_max); 
-            size_t size = NMIoTAPIClass::download_coin_icon(1, g_nm.coin_icon, png_max); // Download the icon for the coin
-            g_nm.coin_icon_updated = (size > 0); // Set the flag to true if the icon was downloaded successfully
+
+            if(g_nm.coin_icon == NULL){
+                size_t png_max = 1024 * 5; // Set a maximum size for the icon buffer
+                g_nm.coin_icon = (uint8_t*)malloc(png_max); 
+                size_t size = NMIoTAPIClass::download_coin_icon(1, g_nm.coin_icon, png_max); // Download the icon for the coin
+                g_nm.coin_icon_updated = (size > 0); // Set the flag to true if the icon was downloaded successfully
+            }
+
 
             // for(uint32_t i = 0; i < size; i++){
             //     log_i("%02x ", g_nm.coin_icon[i]); // Log the downloaded icon data in hex format
             // }
             // log_i("\n");
-
-
-
-
-
-
-
-
-
-
-
 
             // size_t max = 0, total = 0;
             // for(auto &coin : g_nm.coin_map) {
@@ -193,6 +234,30 @@ void nmapi_thread_entry(void *args){
         }
         // update weather realtime data every 10m
         if((thread_cnt + 10) % (60*1) == 0) {
+            // // https://openweathermap.org/img/wn/03d.png
+            // // https://openweathermap.org/img/wn/03d@2x.png
+            double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
+            // json = api->get_weather_realtime(lat, lon);
+            // LOG_W("%s", json.c_str());
+            // if(json.isEmpty()) {
+            //     LOG_E("Failed to get weather realtime data");
+            //     thread_cnt++;
+            //     continue;
+            // }
+
+
+
+            json = api->get_weather_forecast(lat, lon, 8);
+            LOG_W("%s", json.c_str());
+            if(json.isEmpty()) {
+                LOG_E("Failed to get weather forecast data");
+                thread_cnt++;
+                continue;
+            }
+
+
+
+
 
         }
         //update weather forecast data every 15m

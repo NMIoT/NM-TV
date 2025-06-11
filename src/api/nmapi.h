@@ -17,7 +17,9 @@ public:
 
     }
     String get_crypto_rank_price(int start, int limit, const String &convert = "USDT");
-    String get_crypto_info(const String &slug = "bitcoin");
+    String get_weather_realtime(const double &lat, const double &lon);
+    String get_weather_forecast(const double &lat, const double &lon, const size_t &cnt = 16);// 3h every cnt , 3 * 8 = 24
+    String get_air_pollution(const double &lat, const double &lon);
     static size_t download_coin_icon(int coin_id, uint8_t *buf, size_t buf_size);
 };
 
