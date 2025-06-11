@@ -202,51 +202,76 @@ void nmapi_thread_entry(void *args){
             }
             doc.clear();
 
-            
-
-
-
             if(g_nm.coin_icon == NULL){
                 size_t png_max = 1024 * 5; // Set a maximum size for the icon buffer
                 g_nm.coin_icon = (uint8_t*)malloc(png_max); 
                 size_t size = NMIoTAPIClass::download_coin_icon(1, g_nm.coin_icon, png_max); // Download the icon for the coin
                 g_nm.coin_icon_updated = (size > 0); // Set the flag to true if the icon was downloaded successfully
             }
-
-
-            // for(uint32_t i = 0; i < size; i++){
-            //     log_i("%02x ", g_nm.coin_icon[i]); // Log the downloaded icon data in hex format
-            // }
-            // log_i("\n");
-
-            // size_t max = 0, total = 0;
-            // for(auto &coin : g_nm.coin_map) {
-            //     size_t png_max = 1024 * 5; // Set a maximum size for the icon buffer
-            //     if(g_nm.coin_icon != nullptr) {
-            //         free(g_nm.coin_icon); // Free the previous icon buffer if it exists
-            //     }
-            //     g_nm.coin_icon = (uint8_t*)malloc(png_max); 
-            //     size_t size = NMIoTAPIClass::download_coin_icon(coin.second.id, g_nm.coin_icon, png_max); // Download the icon for the coin
-            //     max = (size > max) ? size : max; // Keep track of the maximum size downloaded);
-            //     total += size; // Keep track of the total size downloaded
-            // }
-            // LOG_W("Free memory: %d, Max icon size: %d, Total icons downloaded: %d", ESP.getFreeHeap(), max, total);
         }
         // update weather realtime data every 10m
         if((thread_cnt + 10) % (60*1) == 0) {
             // // https://openweathermap.org/img/wn/03d.png
             // // https://openweathermap.org/img/wn/03d@2x.png
             double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
-            // json = api->get_weather_realtime(lat, lon);
-            // LOG_W("%s", json.c_str());
-            // if(json.isEmpty()) {
-            //     LOG_E("Failed to get weather realtime data");
-            //     thread_cnt++;
-            //     continue;
-            // }
+            json = api->get_weather_realtime(lat, lon);
+            LOG_W("%s", json.c_str());
+            if(json.isEmpty()) {
+                LOG_E("Failed to get weather realtime data");
+                thread_cnt++;
+                continue;
+            }
+
+            // Deserialize the JSON response
+            doc.clear();
+            error = deserializeJson(doc, json);
+            if (error) {
+                LOG_E("deserializeJson() failed: %s", error.c_str());
+                thread_cnt++;
+                continue;
+            }
+
+            // Extract the weather data
+            JsonObject weather = doc.as<JsonObject>();
+            if (!weather.isNull()) {
+                g_nm.weather_realtime.base = weather["base"].as<String>();
+                g_nm.weather_realtime.coord.lat = weather["coord"]["lat"].as<double>();
+                g_nm.weather_realtime.coord.lon = weather["coord"]["lon"].as<double>();
+                g_nm.weather_realtime.dt = weather["dt"].as<uint32_t>();
+                g_nm.weather_realtime.id = weather["id"].as<uint32_t>();
+                g_nm.weather_realtime.name = weather["name"].as<String>();
+                g_nm.weather_realtime.sys.country = weather["sys"]["country"].as<String>();
+                g_nm.weather_realtime.sys.sunrise = weather["sys"]["sunrise"].as<uint32_t>();
+                g_nm.weather_realtime.sys.sunset = weather["sys"]["sunset"].as<uint32_t>();
+                g_nm.weather_realtime.visibility = weather["visibility"].as<uint32_t>();
+                g_nm.weather_realtime.weather.id = weather["weather"][0]["id"].as<uint32_t>();
+                g_nm.weather_realtime.weather.main = weather["weather"][0]["main"].as<String>();
+                g_nm.weather_realtime.weather.description = weather["weather"][0]["description"].as<String>();
+                g_nm.weather_realtime.weather.icon = weather["weather"][0]["icon"].as<String>();
+                g_nm.weather_realtime.main.feels_like = weather["main"]["feels_like"].as<double>();
+                g_nm.weather_realtime.main.grnd_level = weather["main"]["grnd_level"].as<double>();
+                g_nm.weather_realtime.main.sea_level = weather["main"]["sea_level"].as<double>();
+                g_nm.weather_realtime.main.temp = weather["main"]["temp"].as<double>();
+                g_nm.weather_realtime.main.temp_min = weather["main"]["temp_min"].as<double>();
+                g_nm.weather_realtime.main.temp_max = weather["main"]["temp_max"].as<double>();
+                g_nm.weather_realtime.main.pressure = weather["main"]["pressure"].as<double>();
+                g_nm.weather_realtime.main.humidity = weather["main"]["humidity"].as<double>();
+                g_nm.weather_realtime.wind.speed = weather["wind"]["speed"].as<int>();
+                g_nm.weather_realtime.wind.deg = weather["wind"]["deg"].as<int>();
+                g_nm.weather_realtime.timezone = weather["timezone"].as<uint32_t>();
+                g_nm.weather_realtime.cod = weather["cod"].as<uint32_t>();
+            } else {
+                LOG_E("No weather data found");
+            }
 
 
-
+            LOG_W("Weather in %s (%s):", g_nm.weather_realtime.name.c_str(), g_nm.weather_realtime.sys.country.c_str());
+            LOG_W("Coordinates: %.6f, %.6f", g_nm.weather_realtime.coord.lat, g_nm.weather_realtime.coord.lon);
+            LOG_W("Weather: %s (%s), Icon: %s", g_nm.weather_realtime.weather.main.c_str(), g_nm.weather_realtime.weather.description.c_str(), g_nm.weather_realtime.weather.icon.c_str());
+        }
+        //update weather forecast data every 15m
+        if((thread_cnt + 20) % (60*2) == 0) {
+            double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_weather_forecast(lat, lon, 8);
             LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
@@ -255,14 +280,55 @@ void nmapi_thread_entry(void *args){
                 continue;
             }
 
+            // Deserialize the JSON response
+            doc.clear();
+            error = deserializeJson(doc, json);
+            if (error) {
+                LOG_E("deserializeJson() failed: %s", error.c_str());
+                thread_cnt++;
+                continue;
+            }
 
+            // Extract the forecast data
+            JsonObject forecast = doc.as<JsonObject>();
+            if (!forecast.isNull()) {
+                g_nm.weather_forecast.city.name = forecast["city"]["name"].as<String>();
+                g_nm.weather_forecast.city.coord.lat = forecast["city"]["coord"]["lat"].as<double>();
+                g_nm.weather_forecast.city.coord.lon = forecast["city"]["coord"]["lon"].as<double>();
+                g_nm.weather_forecast.city.country = forecast["city"]["country"].as<String>();
+                g_nm.weather_forecast.city.population = forecast["city"]["population"].as<uint32_t>();
+                g_nm.weather_forecast.city.timezone = forecast["city"]["timezone"].as<int>();
+                g_nm.weather_forecast.city.sunrise = forecast["city"]["sunrise"].as<uint32_t>();
+                g_nm.weather_forecast.city.sunset = forecast["city"]["sunset"].as<uint32_t>();
+                g_nm.weather_forecast.cnt = forecast["cnt"].as<uint32_t>();
+                g_nm.weather_forecast.cod = forecast["cod"].as<String>();
+                g_nm.weather_forecast.message = forecast["message"].as<uint32_t>();
+                JsonArray list = forecast["list"].as<JsonArray>();
+                g_nm.weather_forecast.list.clear(); // Clear the previous forecast data
+                for (JsonObject item : list) {
+                    forecast_node_t forecast_item;
+                    forecast_item.dt = item["dt"].as<uint32_t>();
+                    forecast_item.main.temp = item["main"]["temp"].as<double>();
+                    forecast_item.main.feels_like = item["main"]["feels_like"].as<double>();
+                    forecast_item.main.temp_min = item["main"]["temp_min"].as<double>();
+                    forecast_item.main.temp_max = item["main"]["temp_max"].as<double>();
+                    forecast_item.main.pressure = item["main"]["pressure"].as<double>();
+                    forecast_item.main.humidity = item["main"]["humidity"].as<double>();
+                    forecast_item.weather.id = item["weather"][0]["id"].as<uint32_t>();
+                    forecast_item.weather.main = item["weather"][0]["main"].as<String>();
+                    forecast_item.weather.description = item["weather"][0]["description"].as<String>();
+                    forecast_item.weather.icon = item["weather"][0]["icon"].as<String>();
+                    forecast_item.wind.speed = item["wind"]["speed"].as<int>();
+                    forecast_item.wind.deg = item["wind"]["deg"].as<int>();
+                    g_nm.weather_forecast.list.push_back(forecast_item);
+                }
+            } else {
+                LOG_E("No weather forecast data found");
+            }
 
-
-
-        }
-        //update weather forecast data every 15m
-        if((thread_cnt + 20) % (60*15) == 0) {
-            LOG_D("Fetching weather forecast data...");
+            LOG_I("Weather forecast for %s (%s):", g_nm.weather_forecast.city.name.c_str(), g_nm.weather_forecast.city.country.c_str());
+            LOG_I("Timezone: %d, Sunrise: %u, Sunset: %u", g_nm.weather_forecast.city.timezone, g_nm.weather_forecast.city.sunrise, g_nm.weather_forecast.city.sunset);
+            LOG_W("| %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s |", "DateTime", "Temp", "FeelsLike", "TempMin", "TempMax", "Pressure", "Humidity", "Weather");
         }
         thread_cnt++;
     }

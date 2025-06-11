@@ -5,6 +5,7 @@
 #include "device.h"
 #include "nmapi.h"
 #include <map>
+#include <list>
 
 #define CURRENT_VERSION     "v0.0.01"
 #define MINER_WTDG_TIMEOUT  (1000*60*15) //15分钟看门狗
@@ -34,6 +35,110 @@ enum{
     //highest priority
 };
 
+
+
+typedef struct{
+    double      lat;
+    double      lon; 
+}coord_info_t;
+
+typedef struct{
+    String      description;
+    String      icon;
+    String      main;
+    int         id;
+}weather_info_t;
+
+typedef struct{
+    struct{
+        int         all;
+    }clouds;
+    uint32_t       dt;
+    String         dt_txt;
+    struct{
+        float       feels_like;
+        float       grnd_level;
+        float       humidity;
+        float       pressure;
+        float       sea_level;
+        float       temp;
+        float       temp_kf; // 3h step
+        float       temp_max;
+        float       temp_min;
+    }main;
+    uint32_t       pop; // Probability of precipitation
+    uint32_t       visibility;
+    weather_info_t weather;
+    struct{
+        int         deg;
+        int         gust;
+        int         speed;
+    }wind;
+    struct{
+        String      pod;
+    }sys;
+}forecast_node_t;
+
+/*************************** weather forecast ***************************/
+typedef struct{
+    struct{
+        coord_info_t  coord;
+        String         country;
+        uint32_t       id;
+        String         name;
+        uint32_t       population;
+        uint32_t       sunrise;
+        uint32_t       sunset;
+        uint32_t       timezone; // Timezone offset in seconds
+    }city;
+    uint32_t       cnt; // Number of forecast nodes
+    String         cod; // Response code
+    uint32_t       message; // Response message
+    // forecast_node_t *list; // Array of forecast nodes
+    std::list<forecast_node_t> list; // List of forecast nodes
+}weather_forecast_info_t;
+
+/*************************** weather realtime ***************************/
+typedef struct{
+    String         base;
+    struct{
+        int         all;
+    }clouds;
+    uint32_t       cod;// Response code
+    coord_info_t   coord;
+    uint32_t       dt;
+    uint32_t       id;
+    struct{
+        float       feels_like;
+        float       grnd_level;
+        float       humidity;
+        float       pressure;
+        float       sea_level;
+        float       temp;
+        float       temp_kf; // 3h step
+        float       temp_max;
+        float       temp_min;
+    }main;
+    String         name;
+    struct {
+        String country;
+        uint32_t id;
+        String sunrise;
+        String sunset;
+        uint32_t type;
+    }sys;
+    uint32_t timezone;// Timezone offset in seconds
+    uint32_t visibility;
+    weather_info_t weather;
+    struct{
+        int         deg;
+        int         speed;
+    }wind;
+}weather_realtime_info_t;
+
+
+
+/*************************** Crypto Price ***************************/
 typedef struct{
     double       realtime;
     double       market_cap;
@@ -95,6 +200,10 @@ typedef struct{
     float               timezone;
     bool                tz_updated;
     std::map<coin_name, ccoin_info> coin_map;
+
+    weather_realtime_info_t weather_realtime;
+    weather_forecast_info_t weather_forecast;
+
     bool                need_cfg;
     uint8_t             *coin_icon;
     bool                coin_icon_updated;
