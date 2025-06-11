@@ -86,11 +86,12 @@ void nmapi_thread_entry(void *args){
 
         // update crypto rank price data every 60s
         if(thread_cnt % 60 == 0) {
-            json = api->get_crypto_rank_price(1, 20, "USDT");
+            json = api->get_crypto_rank_price(1, 10, "USDT");
             if(json.isEmpty()) {
                 delete api;
                 api = new NMIoTAPIClass();
                 LOG_E("Failed to get crypto rank price data");
+                thread_cnt++;
                 continue;
             }
 
@@ -99,6 +100,7 @@ void nmapi_thread_entry(void *args){
             error = deserializeJson(doc, json);
             if (error) {
                 LOG_E("deserializeJson() failed: %s", error.c_str());
+                thread_cnt++;
                 continue;
             }
         
