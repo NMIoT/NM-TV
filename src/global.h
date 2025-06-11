@@ -54,7 +54,6 @@ typedef struct{
     int                     id; 
     String                  symbol;
     String                  slug;
-    // String                  logo_url;
     crypto_price_info_t     price;
     uint16_t                rank;
 }crypto_coin_info_t;
@@ -97,6 +96,8 @@ typedef struct{
     bool                tz_updated;
     std::map<coin_name, ccoin_info> coin_map;
     bool                need_cfg;
+    uint8_t             *coin_icon;
+    bool                coin_icon_updated;
 }nm_sal_t;
 
 extern nm_sal_t g_nm;

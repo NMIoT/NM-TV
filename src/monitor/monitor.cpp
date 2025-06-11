@@ -58,12 +58,15 @@ void monitor_thread_entry(void *args){
             // g_nm.minerstatus.utc = now;
         }
 
-        //WiFi重连
+
+
         if(xSemaphoreTake(g_nm.connection.wifi.reconnect_xsem, 0) == pdTRUE){
             WiFi.begin(g_nm.connection.wifi.conn_param.ssid.c_str(), g_nm.connection.wifi.conn_param.pwd.c_str());
             delay(1000);
             continue;
         }
+
+        // LOG_W("Free memory: %.3fkB" , ESP.getFreeHeap() / 1024.0f);
     }
     LOG_W("%s thread exit", __FUNCTION__);
     delay(1000);

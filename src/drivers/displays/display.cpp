@@ -15,9 +15,9 @@ static TFT_eSPI     tft     = TFT_eSPI();
 enum{
   PAGE_LOADING = 0,
   PAGE_CONFIG,
-  PAGE_MINER,
+  PAGE_PRICE,
   PAGE_CLOCK,
-  PAGE_GAUGE,
+  PAGE_WEATHER,
   PAGE_END
 };
 
@@ -27,18 +27,9 @@ static lv_disp_draw_buf_t   draw_buf;
 static SemaphoreHandle_t    lvgl_xMutex;
 static lv_obj_t *parent_docker = NULL;
 static lv_obj_t *g_pages[] = {NULL, NULL, NULL, NULL, NULL, NULL};
-static lv_obj_t *saver_scr = NULL;
-static lv_obj_t *loading_page = NULL, *config_page = NULL ,*miner_page = NULL, *clock_page = NULL;
-static lv_obj_t *lb_lpage_progress_value = NULL, *lb_lpage_details_str = NULL, *lb_lpage_bar = NULL, *lb_lpage_version = NULL, *lb_slogan = NULL, *lb_version_check = NULL, *lb_flash_addr = NULL;
-static lv_obj_t *lb_config_page_version = NULL, *lb_config_page_timeout = NULL;
-static lv_obj_t *lb_mpage_temp_unit = NULL, *lb_mpage_hr_value = NULL, *lb_mpage_version = NULL, *lb_mpage_blk_hit = NULL, *lb_mpage_temp_or_time_value = NULL,*lb_mpage_ip_value = NULL,*lb_mpage_rssi_value = NULL,*lb_mpage_price_value = NULL;
-static lv_obj_t *lb_mpage_job_rec_value = NULL, *lb_mpage_net_diff_value = NULL, *lb_mpage_local_diff_value = NULL,*lb_mpage_shares_value = NULL;
-static lv_obj_t *lb_mpage_uptime_day_value = NULL, *lb_mpage_uptime_hms_value = NULL, *lb_mpage_uptime_day_unit_value = NULL;
-static lv_obj_t *lb_mpage_rssi_symbol = NULL, *lb_mpage_price_symbol = NULL, *lb_mpage_job_receive_symbol = NULL, *lb_mpage_net_diff_symbol = NULL, *lb_mpage_local_diff_symbol = NULL,*lb_mpage_share_symb = NULL;
-static lv_obj_t *lb_clock_page_day_value = NULL, *lb_clock_page_hms_value = NULL, *lb_clock_page_hr_value = NULL, *lb_clock_page_hit_value = NULL, *lb_clock_page_hr_unit = NULL, *lb_clock_page_price = NULL, *lb_clock_page_price_changed = NULL, *lb_clock_page_pool = NULL;
-static lv_obj_t *lb_clock_page_version = NULL;
-
-static uint16_t g_page_index = PAGE_MINER;
+static lv_obj_t *loading_page = NULL, *config_page = NULL, *price_page = NULL, *weather_page = NULL, *clock_page = NULL;
+static lv_obj_t *crypto_icon_png = NULL;
+static uint16_t g_page_index = PAGE_PRICE;
 
 #include "image_240_240.h"
 LV_FONT_DECLARE(ds_digib_font_10)
@@ -260,18 +251,10 @@ static void screen_init(){
   tft.setSwapBytes(true);
 
   if(g_nm.screen.orientation){
-    #ifdef NM_TV_154
       tft.setRotation(2);
-    #else
-      tft.setRotation(1); 
-    #endif
   }
   else {
-    #ifdef NM_TV_154
       tft.setRotation(0);
-    #else
-      tft.setRotation(3); 
-    #endif
   }
 
   //等tft初始化完成后再重新设置背光控制PWM
@@ -387,13 +370,13 @@ static void ui_layout_init(void){
   lv_obj_set_size(config_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(config_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
   // Create miner page  
-  miner_page = lv_obj_create(parent_docker);
-  lv_obj_set_size(miner_page, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(miner_page, 1 * SCREEN_WIDTH, 0);
-  lv_obj_set_style_pad_all(miner_page, 0, 0);
-  lv_obj_set_style_border_width(miner_page, 0, 0);
-  lv_obj_set_scrollbar_mode(miner_page, LV_SCROLLBAR_MODE_OFF); 
-  lv_obj_t *miner_img_obj = lv_img_create(miner_page);
+  price_page = lv_obj_create(parent_docker);
+  lv_obj_set_size(price_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(price_page, 1 * SCREEN_WIDTH, 0);
+  lv_obj_set_style_pad_all(price_page, 0, 0);
+  lv_obj_set_style_border_width(price_page, 0, 0);
+  lv_obj_set_scrollbar_mode(price_page, LV_SCROLLBAR_MODE_OFF); 
+  lv_obj_t *miner_img_obj = lv_img_create(price_page);
   lv_img_set_src(miner_img_obj, &miner_img);
   lv_obj_set_size(miner_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(miner_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
@@ -413,395 +396,50 @@ static void ui_layout_init(void){
   // Create g_pages array
   g_pages[PAGE_LOADING] = loading_page;
   g_pages[PAGE_CONFIG]  = config_page;
-  g_pages[PAGE_MINER]   = miner_page;
+  g_pages[PAGE_PRICE]   = price_page;
+  g_pages[PAGE_WEATHER] = weather_page; 
   g_pages[PAGE_CLOCK]   = clock_page; 
-
-  //////////////////////////////////////loading page layout///////////////////////////////////////////////
-  //Version
-  lv_color_t font_color = lv_color_hex(0xFFFFFF);
-  lb_lpage_version   = lv_label_create( loading_page );
-  lv_obj_set_width(lb_lpage_version, SCREEN_WIDTH);
-  lv_label_set_text( lb_lpage_version, CURRENT_VERSION);
-  lv_obj_set_style_text_font(lb_lpage_version, lb_version_loading_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_lpage_version, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_lpage_version, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_lpage_version, LV_ALIGN_TOP_MID, lb_version_loading_coord[0], lb_version_loading_coord[1]);
-  //Slogan 
-  String slogan = "Make it better";
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_slogan   = lv_label_create( loading_page );
-  lv_coord_t width = lv_txt_get_width(slogan.c_str(), strlen(slogan.c_str()), lb_loading_slogan_font, 0, LV_TEXT_FLAG_NONE);
-  lv_obj_set_width(lb_slogan, width);
-  lv_label_set_text( lb_slogan, slogan.c_str());
-  lv_obj_set_style_text_font(lb_slogan, lb_loading_slogan_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_slogan, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_slogan, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_slogan, LV_ALIGN_CENTER, lb_slogan_loading_coord[0], lb_slogan_loading_coord[1]);
-  //////////////////////////////////////config page layout///////////////////////////////////////////////
-  //version
-  font_color = lv_color_hex(0xEE7D30);
-  lb_config_page_version   = lv_label_create( config_page );
-  lv_obj_set_width(lb_config_page_version, SCREEN_WIDTH);
-  lv_label_set_text( lb_config_page_version, g_nm.board.fw_version.c_str());
-  lv_obj_set_style_text_font(lb_config_page_version, lb_cfg_version_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_config_page_version, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_config_page_version, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_config_page_version, LV_ALIGN_TOP_MID, lb_version_config_coord[0], lb_version_config_coord[1]);
-  //config timeout
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_config_page_timeout   = lv_label_create( config_page );
-  lv_obj_set_width(lb_config_page_timeout, SCREEN_WIDTH);
-  lv_label_set_text( lb_config_page_timeout, "");
-  lv_obj_set_style_text_font(lb_config_page_timeout, lb_cfg_timeout_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_config_page_timeout, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_config_page_timeout, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_config_page_timeout, LV_ALIGN_TOP_MID, lb_timeout_config_coord[0], lb_timeout_config_coord[1]);
- //////////////////////////////////////miner page layout///////////////////////////////////////////////
-  //Hashrate value
-  font_color = lv_color_hex(0xEE7D30);
-  lb_mpage_hr_value   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_hr_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_hr_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_hr_value, lb_hashrate_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_hr_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_hr_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_hr_value, LV_ALIGN_TOP_MID, lb_hashrate_coord[0], lb_hashrate_coord[1]); 
-  //Hit value
-  font_color = lv_color_hex(0xEE7D30);
-  lb_mpage_blk_hit   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_blk_hit, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_blk_hit, " ");
-  lv_obj_set_style_text_font(lb_mpage_blk_hit, lb_blk_hit_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_blk_hit, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_blk_hit, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_blk_hit, LV_ALIGN_TOP_MID, lb_blk_hit_coord[0], lb_blk_hit_coord[1]); 
-  //temp value
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_temp_or_time_value   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_temp_or_time_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_temp_or_time_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_temp_or_time_value, lb_temp_or_time_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_temp_or_time_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_temp_or_time_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_temp_or_time_value, LV_ALIGN_TOP_MID, lb_temp_or_time_coord[0], lb_temp_or_time_coord[1]); 
-  //uptime days
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_uptime_day_value = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_uptime_day_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_uptime_day_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_uptime_day_value, lb_uptime_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_uptime_day_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_uptime_day_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_uptime_day_value, LV_ALIGN_TOP_LEFT, lb_uptime_day_coord[0], lb_uptime_day_coord[1]); 
-  //uptime days unit
-  font_color = lv_color_hex(0xEE7D30);
-  lb_mpage_uptime_day_unit_value = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_uptime_day_unit_value, 20);
-  lv_label_set_text( lb_mpage_uptime_day_unit_value, "d");
-  lv_obj_set_style_text_font(lb_mpage_uptime_day_unit_value, lb_uptime_unit_font, LV_PART_MAIN);
-  lv_label_set_long_mode(lb_mpage_uptime_day_unit_value, LV_LABEL_LONG_DOT);
-  lv_obj_set_style_text_color(lb_mpage_uptime_day_unit_value, font_color, LV_PART_MAIN); 
-  lv_obj_align( lb_mpage_uptime_day_unit_value, LV_ALIGN_TOP_LEFT, lb_uptime_day_unit_coord[0], lb_uptime_day_unit_coord[1]); 
-  //uptime value, hour , minute, second
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_uptime_hms_value    = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_uptime_hms_value, 150);
-  lv_label_set_text( lb_mpage_uptime_hms_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_uptime_hms_value, lb_uptime_font, LV_PART_MAIN);
-  lv_label_set_long_mode(lb_mpage_uptime_hms_value, LV_LABEL_LONG_DOT);
-  lv_obj_set_style_text_color(lb_mpage_uptime_hms_value, font_color, LV_PART_MAIN); 
-  lv_obj_align( lb_mpage_uptime_hms_value, LV_ALIGN_TOP_LEFT, lb_uptime_hms_coord[0], lb_uptime_hms_coord[1] );
-
-  //version in miner page 
-  font_color = lv_color_hex(0xF0F0F0);
-  lb_mpage_version    = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_version, 150);
-  lv_label_set_text( lb_mpage_version, g_nm.board.fw_version.substring(1, g_nm.board.fw_version.length()).c_str());
-  lv_obj_set_style_text_font(lb_mpage_version, lb_miner_version_font, LV_PART_MAIN);
-  lv_label_set_long_mode(lb_mpage_version, LV_LABEL_LONG_DOT);
-  lv_obj_set_style_text_color(lb_mpage_version, font_color, LV_PART_MAIN); 
-  lv_obj_align( lb_mpage_version, LV_ALIGN_TOP_LEFT, lb_mine_page_ver_coord[0], lb_mine_page_ver_coord[1] );
-
-  //wifi ip
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_ip_value   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_ip_value, 250);
-  lv_label_set_text( lb_mpage_ip_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_ip_value, lb_wifi_ip_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_ip_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_ip_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_ip_value, LV_ALIGN_TOP_LEFT, lb_wifi_ip_coord[0], lb_wifi_ip_coord[1]);  
-  //wifi rssi
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_rssi_value   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_rssi_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_rssi_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_rssi_value, lb_wifi_rssi_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_rssi_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_rssi_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_rssi_value, LV_ALIGN_TOP_LEFT, lb_wifi_rssi_coord[0], lb_wifi_rssi_coord[1]);  
-
-  //btc price
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_price_value   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_price_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_price_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_price_value, lb_mpage_price_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_price_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_price_value, LV_LABEL_LONG_SCROLL_CIRCULAR);
-  lv_obj_align( lb_mpage_price_value, LV_ALIGN_TOP_LEFT, lb_price_coord[0], lb_price_coord[1]);
-
-  // symbol wifi rssi
-  font_color = lv_color_hex(0xEE7D30);
-  lb_mpage_rssi_symbol   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_rssi_symbol, 30);
-  lv_label_set_text( lb_mpage_rssi_symbol, LV_SYMBOL_WIFI);
-  lv_obj_set_style_text_font(lb_mpage_rssi_symbol, lb_wifi_rssi_symbol_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_rssi_symbol, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_rssi_symbol, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_rssi_symbol, LV_ALIGN_TOP_LEFT, lb_wifi_rssi_symbol_coord[0], lb_wifi_rssi_symbol_coord[1]); 
-  
-  //job received value
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_job_rec_value   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_job_rec_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_job_rec_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_job_rec_value, lb_job_received_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_job_rec_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_job_rec_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_job_rec_value, LV_ALIGN_TOP_MID, lb_job_received_coord[0], lb_job_received_coord[1]); 
-  //net diff value
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_net_diff_value   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_net_diff_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_net_diff_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_net_diff_value, lb_net_diff_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_net_diff_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_net_diff_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_net_diff_value, LV_ALIGN_TOP_MID, lb_net_diff_coord[0], lb_net_diff_coord[1]); 
-  //local diff value
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_local_diff_value   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_local_diff_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_local_diff_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_local_diff_value, lb_local_diff_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_local_diff_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_local_diff_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_local_diff_value, LV_ALIGN_TOP_MID, lb_local_diff_coord[0], lb_local_diff_coord[1]); 
-  //shares value  
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_mpage_shares_value   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_shares_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_mpage_shares_value, " ");
-  lv_obj_set_style_text_font(lb_mpage_shares_value, lb_shares_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_shares_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_shares_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_shares_value, LV_ALIGN_TOP_MID, lb_shares_coord[0], lb_shares_coord[1]); 
-
-  //job received symbol
-  font_color = lv_color_hex(0xA9A9A9);
-  lb_mpage_job_receive_symbol   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_job_receive_symbol, 30);
-  lv_label_set_text( lb_mpage_job_receive_symbol, "\xEF\x80\x99");
-  lv_obj_set_style_text_font(lb_mpage_job_receive_symbol, lb_job_receive_symbol_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_job_receive_symbol, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_job_receive_symbol, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_job_receive_symbol, LV_ALIGN_TOP_LEFT, lb_job_receive_symbol_coord[0], lb_job_receive_symbol_coord[1]); 
-  //net diff symbol
-  font_color = lv_color_hex(0xA9A9A9);
-  lb_mpage_net_diff_symbol   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_net_diff_symbol, 30);
-  lv_label_set_text( lb_mpage_net_diff_symbol, "\xEF\x95\xBD");
-  lv_obj_set_style_text_font(lb_mpage_net_diff_symbol, lb_net_diff_symbol_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_net_diff_symbol, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_net_diff_symbol, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_net_diff_symbol, LV_ALIGN_TOP_LEFT, lb_net_diff_symbol_coord[0], lb_net_diff_symbol_coord[1]); 
-  //local diff symbol
-  font_color = lv_color_hex(0xA9A9A9);
-  lb_mpage_local_diff_symbol   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_local_diff_symbol, 30);
-  lv_label_set_text( lb_mpage_local_diff_symbol, "\xEF\x82\x80");
-  lv_obj_set_style_text_font(lb_mpage_local_diff_symbol, lb_local_diff_symbol_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_local_diff_symbol, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_local_diff_symbol, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_local_diff_symbol, LV_ALIGN_TOP_LEFT, lb_local_diff_symbol_coord[0], lb_local_diff_symbol_coord[1]); 
-  // share symbol
-  font_color = lv_color_hex(0xA9A9A9);
-  lb_mpage_share_symb   = lv_label_create( miner_page );
-  lv_obj_set_width(lb_mpage_share_symb, 30);
-  lv_label_set_text( lb_mpage_share_symb, "\xEF\x8E\x82");
-  lv_obj_set_style_text_font(lb_mpage_share_symb, lb_share_symb_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_mpage_share_symb, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_mpage_share_symb, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_mpage_share_symb, LV_ALIGN_TOP_LEFT, lb_share_symb_coord[0], lb_share_symb_coord[1]); 
-  //////////////////////////////////////clock page layout///////////////////////////////////////////////
-  //version
-  font_color = lv_color_hex(0xB0B0B0 );
-  lb_clock_page_version  = lv_label_create( clock_page );
-  String fw_version = g_nm.board.fw_version.substring(1, g_nm.board.fw_version.length());
-  width = lv_txt_get_width(fw_version.c_str(), fw_version.length(), lb_clock_version_font, 0, LV_TEXT_FLAG_NONE);
-  lv_obj_set_width(lb_clock_page_version, width);
-  lv_label_set_text( lb_clock_page_version, fw_version.c_str());
-  lv_obj_set_style_text_font(lb_clock_page_version, lb_clock_version_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_clock_page_version, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_clock_page_version, LV_LABEL_LONG_SCROLL_CIRCULAR);
-  lv_obj_align( lb_clock_page_version, LV_ALIGN_BOTTOM_LEFT, 0,0);
-  //clock day
-  font_color = lv_color_hex(0xB0B0B0 );
-  lb_clock_page_day_value   = lv_label_create( clock_page );
-  lv_obj_set_width(lb_clock_page_day_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_clock_page_day_value, " ");
-  lv_obj_set_style_text_font(lb_clock_page_day_value, lb_clock_day_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_clock_page_day_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_clock_page_day_value, LV_LABEL_LONG_SCROLL_CIRCULAR);
-  lv_obj_align( lb_clock_page_day_value, LV_ALIGN_BOTTOM_RIGHT, lb_clock_day_coord[0], lb_clock_day_coord[1]);  
-   
-
-  //clock hms
-  font_color = lv_color_hex(0xFFFFFF);
-  lb_clock_page_hms_value   = lv_label_create( clock_page );
-  width  = lv_txt_get_width("00:00:00 AM", strlen("00:00:00 AM"), lb_clock_hms_font, 0, LV_TEXT_FLAG_NONE);
-  lv_obj_set_width(lb_clock_page_hms_value, width);
-  lv_label_set_text( lb_clock_page_hms_value, " ");
-  lv_obj_set_style_text_font(lb_clock_page_hms_value, lb_clock_hms_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_clock_page_hms_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_clock_page_hms_value, LV_LABEL_LONG_SCROLL_CIRCULAR);
-  lv_obj_align(lb_clock_page_hms_value, LV_ALIGN_CENTER, lb_clock_hms_coord[0], lb_clock_hms_coord[1]);  
-
-  //hash rate in clock page
-  font_color = lv_color_hex(0xEE7D30);
-  lb_clock_page_hr_value   = lv_label_create( clock_page );
-  lv_obj_set_width(lb_clock_page_hr_value, SCREEN_WIDTH);
-  lv_label_set_text( lb_clock_page_hr_value, " ");
-  lv_obj_set_style_text_font(lb_clock_page_hr_value, lb_clock_hr_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_clock_page_hr_value, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_clock_page_hr_value, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_clock_page_hr_value, LV_ALIGN_TOP_MID, lb_clock_hr_coord[0], lb_clock_hr_coord[1]);
-
-  //hash rate unit in clock page
-  font_color = lv_color_hex(0xB0B0B0 );
-  lb_clock_page_hr_unit   = lv_label_create( clock_page );
-  width = lv_txt_get_width(String("kH/s").c_str(), strlen(String("kH/s").c_str()), lb_clock_hr_unit_font, 0, LV_TEXT_FLAG_NONE);
-  lv_obj_set_width(lb_clock_page_hr_unit, width);
-  lv_label_set_text( lb_clock_page_hr_unit, "kH/s");
-  lv_obj_set_style_text_font(lb_clock_page_hr_unit, lb_clock_hr_unit_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_clock_page_hr_unit, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_clock_page_hr_unit, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_clock_page_hr_unit, LV_ALIGN_TOP_RIGHT, lb_clock_hr_unit_coord[0], lb_clock_hr_unit_coord[1]); 
+  ////////////////////////////////////// loading page layout ///////////////////////////////////////////////
+ 
 }
 
 
 static void ui_update_loading_string(String str, uint32_t color, bool prgress_update) {
-    static uint8_t progress = 0, progress_total = 8;
 
-    lv_color_t font_color = lv_color_hex(color);
-    if (lb_lpage_details_str == NULL){
-        //loading status string
-        lb_lpage_details_str = lv_label_create(loading_page);
-        lv_obj_set_width(lb_lpage_details_str, SCREEN_WIDTH);
-        lv_obj_set_style_text_font(lb_lpage_details_str, lb_loading_font, LV_PART_MAIN);
-        lv_label_set_long_mode(lb_lpage_details_str, LV_LABEL_LONG_DOT);
-        lv_obj_align(lb_lpage_details_str, LV_ALIGN_BOTTOM_LEFT, 0, 0);
-        //bar 
-        lb_lpage_bar = lv_bar_create(loading_page);
-        lv_bar_set_range(lb_lpage_bar, 0, progress_total);
-        lv_bar_set_value(lb_lpage_bar, progress, LV_ANIM_ON);
-        lv_obj_set_size(lb_lpage_bar, SCREEN_WIDTH * 0.9, 3);
-        lv_obj_align(lb_lpage_bar, LV_ALIGN_CENTER, 0, -20);
-        lv_obj_set_style_bg_color(lb_lpage_bar, lv_color_hex(0xFFFFFF), LV_PART_INDICATOR);
-        lv_obj_set_style_bg_opa(lb_lpage_bar, LV_OPA_COVER, LV_PART_INDICATOR);
 
-        //progress label
-        lb_lpage_progress_value = lv_label_create(loading_page);
-        lv_label_set_text(lb_lpage_progress_value, "");
-        lv_obj_set_style_text_font(lb_lpage_progress_value, lb_loading_progress_font, LV_PART_MAIN); 
-        lv_obj_align(lb_lpage_progress_value, LV_ALIGN_LEFT_MID, 30, -10);
-
-        //version check result
-        lb_version_check   = lv_label_create( loading_page );
-        lv_label_set_text( lb_version_check, "");
-        lv_obj_set_style_text_font(lb_version_check, lb_loading_version_check_font, LV_PART_MAIN);
-        lv_obj_set_style_text_color(lb_version_check, font_color, LV_PART_MAIN); 
-        lv_label_set_long_mode(lb_version_check, LV_LABEL_LONG_SCROLL_CIRCULAR);
-        lv_obj_align( lb_version_check, LV_ALIGN_CENTER, lb_version_check_loading_coord[0], lb_version_check_loading_coord[1]);
-
-        //flash address
-        lb_flash_addr   = lv_label_create( loading_page );
-        lv_label_set_text( lb_flash_addr, "");
-        lv_obj_set_style_text_font(lb_flash_addr, lb_loading_version_check_font, LV_PART_MAIN);
-        lv_obj_set_style_text_color(lb_flash_addr, font_color, LV_PART_MAIN); 
-        lv_label_set_long_mode(lb_flash_addr, LV_LABEL_LONG_SCROLL_CIRCULAR);
-        lv_obj_align( lb_flash_addr, LV_ALIGN_CENTER, lb_flash_addr_loading_coord[0], lb_flash_addr_loading_coord[1]);
-    }
-
-    //版本检测提示
-    int8_t res = compareVersions(g_nm.board.fw_version, g_nm.board.fw_latest_release);
-    String reminder = "";
-    lv_color_t ck_color = lv_color_hex(0xFFFFFF);
-    if(-1 == res){
-      ck_color = lv_color_hex(0x00FF00);
-      reminder = "New firmware available : " + g_nm.board.fw_latest_release;
-      lv_coord_t width = lv_txt_get_width(reminder.c_str(), strlen(reminder.c_str()), lb_loading_version_check_font, 0, LV_TEXT_FLAG_NONE);
-      lv_obj_set_width(lb_version_check, (width > SCREEN_WIDTH) ? SCREEN_WIDTH : width);
-      lv_label_set_text( lb_version_check, reminder.c_str());
-      lv_obj_set_style_text_font(lb_version_check, lb_loading_version_check_font, LV_PART_MAIN);
-      lv_obj_set_style_text_color(lb_version_check, ck_color, LV_PART_MAIN); 
-
-      ck_color = lv_color_hex(0xFFFFFF);
-      reminder = "https://flash.nmiot.com";
-      width = lv_txt_get_width(reminder.c_str(), strlen(reminder.c_str()), lb_loading_version_check_font, 0, LV_TEXT_FLAG_NONE);
-      lv_obj_set_width(lb_flash_addr, (width > SCREEN_WIDTH) ? SCREEN_WIDTH : width);
-      lv_label_set_text( lb_flash_addr, reminder.c_str());
-      lv_obj_set_style_text_font(lb_flash_addr, lb_loading_version_check_font, LV_PART_MAIN);
-      lv_obj_set_style_text_color(lb_flash_addr, ck_color, LV_PART_MAIN); 
-    }
-
-    //loading进度条
-    if(prgress_update){
-      lv_coord_t bar_x = lv_obj_get_x(lb_lpage_bar);
-      lv_coord_t bar_w = lv_obj_get_width(lb_lpage_bar);
-      lv_coord_t label_x = bar_x + (bar_w * progress / progress_total) - lv_obj_get_width(lb_lpage_progress_value) / 2;
-      lv_obj_set_pos(lb_lpage_progress_value, label_x, -10);
-
-      lv_obj_set_style_text_color(lb_lpage_progress_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
-      lv_label_set_text(lb_lpage_progress_value, (String(100 * (float)progress/(float)progress_total, 0) + "%").c_str());
-      lv_bar_set_value(lb_lpage_bar, progress, LV_ANIM_ON);
-      progress++;
-    }
-    lv_obj_set_style_text_color(lb_lpage_details_str, font_color, LV_PART_MAIN);
-    lv_label_set_text(lb_lpage_details_str, str.c_str());
 }
 
 static void ui_saver_page_init(){
 
 }
 
-static void ui_miner_page_refresh(){
-  
+
+static void ui_price_page_refresh(){
+  // https://s2.coinmarketcap.com/static/img/coins/64x64/1.png
+  if(g_nm.coin_map.empty()) return;
+  if(g_pages[PAGE_PRICE] == NULL) return;
+  if(g_nm.coin_icon == NULL) return;
+  static bool first = true;
+
+
+  static lv_img_dsc_t coin_icon_img_dsc;
+  coin_icon_img_dsc.header.always_zero = 0;
+  coin_icon_img_dsc.header.w = 0; // PNG 不需要手动指定宽高
+  coin_icon_img_dsc.header.h = 0;
+  coin_icon_img_dsc.header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA; 
+  coin_icon_img_dsc.data_size = 2691;
+  coin_icon_img_dsc.data = (const uint8_t *)g_nm.coin_icon;
+
+  if(first && g_nm.coin_icon_updated){
+      crypto_icon_png = lv_img_create(g_pages[PAGE_PRICE]);
+      lv_img_set_src(crypto_icon_png, &coin_icon_img_dsc);  // 直接传二进制PNG数据指针
+      lv_obj_align(crypto_icon_png, LV_ALIGN_TOP_LEFT, 0, 0);
+      // LOG_W("icon size: %d x %d", lv_obj_get_width(crypto_icon_png), lv_obj_get_height(crypto_icon_png));
+      first = false;
+  }
 }
 
 static void ui_clock_page_refresh(){
-// [I/NM] |      1 | bitcoin      |    1 |  109760.23 |  2181728885084.6 |  -0.03% |   0.10% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/1.png 
-// [I/NM] |   1027 | ethereum     |    2 |    2791.24 |   336964149198.0 |  -0.03% |   3.81% | 2025-06-11T02:16:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png 
-// [I/NM] |    825 | tether       |    3 |       1.00 |   155181610791.2 |   0.00% |   0.00% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/825.png 
-// [I/NM] |     52 | xrp          |    4 |       2.29 |   134531676655.8 |  -0.20% |  -1.06% | 2025-06-11T02:16:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/52.png 
-// [I/NM] |   1839 | bnb          |    5 |     669.75 |    94359160501.1 |  -0.08% |   0.65% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png 
-// [I/NM] |   5426 | solana       |    6 |     165.17 |    86731493151.6 |   0.58% |   3.41% | 2025-06-11T02:16:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png 
-// [I/NM] |   3408 | usd-coin     |    7 |       1.00 |    60985862568.7 |   0.02% |  -0.01% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png 
-// [I/NM] |     74 | dogecoin     |    8 |       0.20 |    29376408776.0 |   0.44% |   1.27% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/74.png 
-// [I/NM] |   1958 | tron         |    9 |       0.29 |    27462853689.3 |  -0.22% |   0.70% | 2025-06-11T02:16:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/1958.png 
-// [I/NM] |   2010 | cardano      |   10 |       0.71 |    25257494139.8 |   0.31% |   0.63% | 2025-06-11T02:15:00.000Z | https://s2.coinmarketcap.com/static/img/coins/64x64/2010.png 
-
-
-
-
-
-
-
-
-
-
-
 
 }
 
@@ -885,7 +523,6 @@ static void ui_refresh_thread(void *args){
 
   bool saver_active = false;
   uint32_t freq = 1000 * g_nm.screen.refresh_interval;
- 
   while (true){
     uint32_t start = millis();
     
@@ -906,7 +543,7 @@ static void ui_refresh_thread(void *args){
       if(saver_active)                    ui_saver_page_refresh();
       else                                ui_delete_screensaver();
 #endif
-      if(g_page_index == PAGE_MINER)      ui_miner_page_refresh();
+      if(g_page_index == PAGE_PRICE)      ui_price_page_refresh();
       else if(g_page_index == PAGE_CLOCK) ui_clock_page_refresh();
 #if defined(HAS_GAUGE_FEATURE)
       else if(g_page_index == PAGE_GAUGE || g_page_index == PAGE_CONFIG) ui_gauge_page_refresh();
@@ -991,28 +628,28 @@ void ui_switch_next_page_cb(){
     static bool page_direction = false;
       if (page_direction == false) {
         if (g_page_index == PAGE_GAUGE) {
-            g_page_index = PAGE_MINER;
-        } else if (g_page_index == PAGE_MINER) {
+            g_page_index = PAGE_PRICE;
+        } else if (g_page_index == PAGE_PRICE) {
             g_page_index = PAGE_CLOCK;
         } else if (g_page_index == PAGE_CLOCK) {
-            g_page_index = PAGE_MINER;
+            g_page_index = PAGE_PRICE;
             page_direction = true;
         }else {
             g_page_index = PAGE_GAUGE;
         }
       } else if (page_direction == true) {
-          if (g_page_index == PAGE_MINER) {
+          if (g_page_index == PAGE_PRICE) {
               g_page_index = PAGE_GAUGE;
               page_direction = false;
           }
       }
   }
 #else
-  g_page_index = (g_page_index == PAGE_MINER) ? PAGE_CLOCK : PAGE_MINER;//在miner页面和clock页面之间切换
+  g_page_index = (g_page_index == PAGE_PRICE) ? PAGE_CLOCK : PAGE_PRICE;//在miner页面和clock页面之间切换
 #endif
   uint8_t default_interval = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
 
-  g_nm.screen.refresh_interval = (g_page_index == PAGE_CLOCK || g_page_index == PAGE_GAUGE) ? 1 : default_interval;
+  g_nm.screen.refresh_interval = (g_page_index == PAGE_CLOCK) ? 1 : default_interval;
 
   ui_switch_to_page(g_page_index, true);
 
@@ -1045,7 +682,7 @@ void display_thread(void *args){
   ui_switch_to_page(PAGE_LOADING, true);
 
   /***************************************switch to miner page*************************************/
-  ui_switch_to_page(PAGE_MINER, true);
+  ui_switch_to_page(PAGE_PRICE, true);
   g_nm.screen.last_operaion = millis();
   vTaskDelete(NULL);
 }

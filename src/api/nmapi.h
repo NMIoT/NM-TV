@@ -18,7 +18,7 @@ public:
     }
     String get_crypto_rank_price(int start, int limit, const String &convert = "USDT");
     String get_crypto_info(const String &slug = "bitcoin");
-    bool download_icon(int coin_id = 1);
+    static size_t download_coin_icon(int coin_id, uint8_t *buf, size_t buf_size);
 };
 
 void nmapi_thread_entry(void *args);
