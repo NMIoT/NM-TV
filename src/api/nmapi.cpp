@@ -149,7 +149,7 @@ void nmapi_thread_entry(void *args){
             continue;
         }
 
-        // update crypto rank price data every 60s
+        /***********************************update crypto rank price data every 60s*************************************/
         if(thread_cnt % 30 == 0) {
             json = api->get_crypto_rank_price(1, 10, "USDT");
             if(json.isEmpty()) {
@@ -209,13 +209,13 @@ void nmapi_thread_entry(void *args){
                 g_nm.coin_icon_updated = (size > 0); // Set the flag to true if the icon was downloaded successfully
             }
         }
-        // update weather realtime data every 10m
+        /************************************update weather realtime data every 10m************************************/
         if((thread_cnt + 10) % (60*1) == 0) {
             // // https://openweathermap.org/img/wn/03d.png
             // // https://openweathermap.org/img/wn/03d@2x.png
             double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_weather_realtime(lat, lon);
-            LOG_W("%s", json.c_str());
+            // LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
                 LOG_E("Failed to get weather realtime data");
                 thread_cnt++;
@@ -234,46 +234,52 @@ void nmapi_thread_entry(void *args){
             // Extract the weather data
             JsonObject weather = doc.as<JsonObject>();
             if (!weather.isNull()) {
-                g_nm.weather_realtime.base = weather["base"].as<String>();
-                g_nm.weather_realtime.coord.lat = weather["coord"]["lat"].as<double>();
-                g_nm.weather_realtime.coord.lon = weather["coord"]["lon"].as<double>();
-                g_nm.weather_realtime.dt = weather["dt"].as<uint32_t>();
-                g_nm.weather_realtime.id = weather["id"].as<uint32_t>();
-                g_nm.weather_realtime.name = weather["name"].as<String>();
-                g_nm.weather_realtime.sys.country = weather["sys"]["country"].as<String>();
-                g_nm.weather_realtime.sys.sunrise = weather["sys"]["sunrise"].as<uint32_t>();
-                g_nm.weather_realtime.sys.sunset = weather["sys"]["sunset"].as<uint32_t>();
-                g_nm.weather_realtime.visibility = weather["visibility"].as<uint32_t>();
-                g_nm.weather_realtime.weather.id = weather["weather"][0]["id"].as<uint32_t>();
-                g_nm.weather_realtime.weather.main = weather["weather"][0]["main"].as<String>();
-                g_nm.weather_realtime.weather.description = weather["weather"][0]["description"].as<String>();
-                g_nm.weather_realtime.weather.icon = weather["weather"][0]["icon"].as<String>();
-                g_nm.weather_realtime.main.feels_like = weather["main"]["feels_like"].as<double>();
-                g_nm.weather_realtime.main.grnd_level = weather["main"]["grnd_level"].as<double>();
-                g_nm.weather_realtime.main.sea_level = weather["main"]["sea_level"].as<double>();
-                g_nm.weather_realtime.main.temp = weather["main"]["temp"].as<double>();
-                g_nm.weather_realtime.main.temp_min = weather["main"]["temp_min"].as<double>();
-                g_nm.weather_realtime.main.temp_max = weather["main"]["temp_max"].as<double>();
-                g_nm.weather_realtime.main.pressure = weather["main"]["pressure"].as<double>();
-                g_nm.weather_realtime.main.humidity = weather["main"]["humidity"].as<double>();
-                g_nm.weather_realtime.wind.speed = weather["wind"]["speed"].as<int>();
-                g_nm.weather_realtime.wind.deg = weather["wind"]["deg"].as<int>();
-                g_nm.weather_realtime.timezone = weather["timezone"].as<uint32_t>();
-                g_nm.weather_realtime.cod = weather["cod"].as<uint32_t>();
+                g_nm.weather_realtime.base = weather.containsKey("base") ? weather["base"].as<String>() : "";
+                g_nm.weather_realtime.coord.lat = weather.containsKey("coord") && weather["coord"].containsKey("lat") ? weather["coord"]["lat"].as<double>() : 0.0;
+                g_nm.weather_realtime.coord.lon = weather.containsKey("coord") && weather["coord"].containsKey("lon") ? weather["coord"]["lon"].as<double>() : 0.0;
+                g_nm.weather_realtime.dt = weather.containsKey("dt") ? weather["dt"].as<uint32_t>() : 0;
+                g_nm.weather_realtime.id = weather.containsKey("id") ? weather["id"].as<uint32_t>() : 0;
+                g_nm.weather_realtime.name = weather.containsKey("name") ? weather["name"].as<String>() : "";
+                g_nm.weather_realtime.sys.country = weather.containsKey("sys") && weather["sys"].containsKey("country") ? weather["sys"]["country"].as<String>() : "";
+                g_nm.weather_realtime.sys.sunrise = weather.containsKey("sys") && weather["sys"].containsKey("sunrise") ? weather["sys"]["sunrise"].as<uint32_t>() : 0;
+                g_nm.weather_realtime.sys.sunset = weather.containsKey("sys") && weather["sys"].containsKey("sunset") ? weather["sys"]["sunset"].as<uint32_t>() : 0;
+                g_nm.weather_realtime.visibility = weather.containsKey("visibility") ? weather["visibility"].as<uint32_t>() : 0;
+                g_nm.weather_realtime.weather.id = weather.containsKey("weather") && weather["weather"].is<JsonArray>() && weather["weather"][0].containsKey("id") ? weather["weather"][0]["id"].as<uint32_t>() : 0;
+                g_nm.weather_realtime.weather.main = weather.containsKey("weather") && weather["weather"].is<JsonArray>() && weather["weather"][0].containsKey("main") ? weather["weather"][0]["main"].as<String>() : "";
+                g_nm.weather_realtime.weather.description = weather.containsKey("weather") && weather["weather"].is<JsonArray>() && weather["weather"][0].containsKey("description") ? weather["weather"][0]["description"].as<String>() : "";
+                g_nm.weather_realtime.weather.icon = weather.containsKey("weather") && weather["weather"].is<JsonArray>() && weather["weather"][0].containsKey("icon") ? weather["weather"][0]["icon"].as<String>() : "";
+                g_nm.weather_realtime.main.feels_like = weather.containsKey("main") && weather["main"].containsKey("feels_like") ? weather["main"]["feels_like"].as<double>() : 0.0;
+                g_nm.weather_realtime.main.grnd_level = weather.containsKey("main") && weather["main"].containsKey("grnd_level") ? weather["main"]["grnd_level"].as<double>() : 0.0;
+                g_nm.weather_realtime.main.sea_level = weather.containsKey("main") && weather["main"].containsKey("sea_level") ? weather["main"]["sea_level"].as<double>() : 0.0;
+                g_nm.weather_realtime.main.temp = weather.containsKey("main") && weather["main"].containsKey("temp") ? weather["main"]["temp"].as<double>() : 0.0;
+                g_nm.weather_realtime.main.temp_min = weather.containsKey("main") && weather["main"].containsKey("temp_min") ? weather["main"]["temp_min"].as<double>() : 0.0;
+                g_nm.weather_realtime.main.temp_max = weather.containsKey("main") && weather["main"].containsKey("temp_max") ? weather["main"]["temp_max"].as<double>() : 0.0;
+                g_nm.weather_realtime.main.pressure = weather.containsKey("main") && weather["main"].containsKey("pressure") ? weather["main"]["pressure"].as<double>() : 0.0;
+                g_nm.weather_realtime.main.humidity = weather.containsKey("main") && weather["main"].containsKey("humidity") ? weather["main"]["humidity"].as<double>() : 0.0;
+                g_nm.weather_realtime.wind.speed = weather.containsKey("wind") && weather["wind"].containsKey("speed") ? weather["wind"]["speed"].as<float>() : 0;
+                g_nm.weather_realtime.wind.deg = weather.containsKey("wind") && weather["wind"].containsKey("deg") ? weather["wind"]["deg"].as<float>() : 0;
+                g_nm.weather_realtime.timezone = weather.containsKey("timezone") ? weather["timezone"].as<int>() : 0;
+                g_nm.weather_realtime.cod = weather.containsKey("cod") ? weather["cod"].as<int>() : 0;
+
+
+                LOG_W("Weather in %s (%s): %.2f°C, %s, %s, Humidity: %.1f%%, Wind: %.1f m/s",
+                    g_nm.weather_realtime.name.c_str(),
+                    g_nm.weather_realtime.sys.country.c_str(),
+                    g_nm.weather_realtime.main.temp,
+                    g_nm.weather_realtime.weather.main.c_str(),
+                    g_nm.weather_realtime.weather.description.c_str(),
+                    g_nm.weather_realtime.main.humidity,
+                    g_nm.weather_realtime.wind.speed
+                );
             } else {
                 LOG_E("No weather data found");
             }
-
-
-            LOG_W("Weather in %s (%s):", g_nm.weather_realtime.name.c_str(), g_nm.weather_realtime.sys.country.c_str());
-            LOG_W("Coordinates: %.6f, %.6f", g_nm.weather_realtime.coord.lat, g_nm.weather_realtime.coord.lon);
-            LOG_W("Weather: %s (%s), Icon: %s", g_nm.weather_realtime.weather.main.c_str(), g_nm.weather_realtime.weather.description.c_str(), g_nm.weather_realtime.weather.icon.c_str());
         }
-        //update weather forecast data every 15m
+        /************************************update weather forecast data every 15m ************************************/
         if((thread_cnt + 20) % (60*2) == 0) {
             double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_weather_forecast(lat, lon, 8);
-            LOG_W("%s", json.c_str());
+            // LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
                 LOG_E("Failed to get weather forecast data");
                 thread_cnt++;
@@ -292,43 +298,66 @@ void nmapi_thread_entry(void *args){
             // Extract the forecast data
             JsonObject forecast = doc.as<JsonObject>();
             if (!forecast.isNull()) {
-                g_nm.weather_forecast.city.name = forecast["city"]["name"].as<String>();
-                g_nm.weather_forecast.city.coord.lat = forecast["city"]["coord"]["lat"].as<double>();
-                g_nm.weather_forecast.city.coord.lon = forecast["city"]["coord"]["lon"].as<double>();
-                g_nm.weather_forecast.city.country = forecast["city"]["country"].as<String>();
-                g_nm.weather_forecast.city.population = forecast["city"]["population"].as<uint32_t>();
-                g_nm.weather_forecast.city.timezone = forecast["city"]["timezone"].as<int>();
-                g_nm.weather_forecast.city.sunrise = forecast["city"]["sunrise"].as<uint32_t>();
-                g_nm.weather_forecast.city.sunset = forecast["city"]["sunset"].as<uint32_t>();
-                g_nm.weather_forecast.cnt = forecast["cnt"].as<uint32_t>();
-                g_nm.weather_forecast.cod = forecast["cod"].as<String>();
-                g_nm.weather_forecast.message = forecast["message"].as<uint32_t>();
-                JsonArray list = forecast["list"].as<JsonArray>();
+                g_nm.weather_forecast.city.name = forecast.containsKey("city") && forecast["city"].containsKey("name") ? forecast["city"]["name"].as<String>() : "";
+                g_nm.weather_forecast.city.coord.lat = forecast.containsKey("city") && forecast["city"].containsKey("coord") && forecast["city"]["coord"].containsKey("lat") ? forecast["city"]["coord"]["lat"].as<double>() : 0.0;
+                g_nm.weather_forecast.city.coord.lon = forecast.containsKey("city") && forecast["city"].containsKey("coord") && forecast["city"]["coord"].containsKey("lon") ? forecast["city"]["coord"]["lon"].as<double>() : 0.0;
+                g_nm.weather_forecast.city.country = forecast.containsKey("city") && forecast["city"].containsKey("country") ? forecast["city"]["country"].as<String>() : "";
+                g_nm.weather_forecast.city.population = forecast.containsKey("city") && forecast["city"].containsKey("population") ? forecast["city"]["population"].as<uint32_t>() : 0;
+                g_nm.weather_forecast.city.timezone = forecast.containsKey("city") && forecast["city"].containsKey("timezone") ? forecast["city"]["timezone"].as<int>() : 0;
+                g_nm.weather_forecast.city.sunrise = forecast.containsKey("city") && forecast["city"].containsKey("sunrise") ? forecast["city"]["sunrise"].as<uint32_t>() : 0;
+                g_nm.weather_forecast.city.sunset = forecast.containsKey("city") && forecast["city"].containsKey("sunset") ? forecast["city"]["sunset"].as<uint32_t>() : 0;
+                g_nm.weather_forecast.cnt = forecast.containsKey("cnt") ? forecast["cnt"].as<uint32_t>() : 0;
+                g_nm.weather_forecast.cod = forecast.containsKey("cod") ? forecast["cod"].as<String>() : "";
+                g_nm.weather_forecast.message = forecast.containsKey("message") ? forecast["message"].as<double>() : 0.0;
+                JsonArray list = forecast.containsKey("list") ? forecast["list"].as<JsonArray>() : JsonArray();
                 g_nm.weather_forecast.list.clear(); // Clear the previous forecast data
                 for (JsonObject item : list) {
                     forecast_node_t forecast_item;
-                    forecast_item.dt = item["dt"].as<uint32_t>();
-                    forecast_item.main.temp = item["main"]["temp"].as<double>();
-                    forecast_item.main.feels_like = item["main"]["feels_like"].as<double>();
-                    forecast_item.main.temp_min = item["main"]["temp_min"].as<double>();
-                    forecast_item.main.temp_max = item["main"]["temp_max"].as<double>();
-                    forecast_item.main.pressure = item["main"]["pressure"].as<double>();
-                    forecast_item.main.humidity = item["main"]["humidity"].as<double>();
-                    forecast_item.weather.id = item["weather"][0]["id"].as<uint32_t>();
-                    forecast_item.weather.main = item["weather"][0]["main"].as<String>();
-                    forecast_item.weather.description = item["weather"][0]["description"].as<String>();
-                    forecast_item.weather.icon = item["weather"][0]["icon"].as<String>();
-                    forecast_item.wind.speed = item["wind"]["speed"].as<int>();
-                    forecast_item.wind.deg = item["wind"]["deg"].as<int>();
+                    forecast_item.dt = item.containsKey("dt") ? item["dt"].as<uint32_t>() : 0;
+                    forecast_item.dt_txt = item.containsKey("dt_txt") ? item["dt_txt"].as<String>() : "";
+                    forecast_item.clouds.all = item.containsKey("clouds") && item["clouds"].containsKey("all") ? item["clouds"]["all"].as<int>() : 0;
+                    forecast_item.main.temp = item.containsKey("main") && item["main"].containsKey("temp") ? item["main"]["temp"].as<double>() : 0.0;
+                    forecast_item.main.feels_like = item.containsKey("main") && item["main"].containsKey("feels_like") ? item["main"]["feels_like"].as<double>() : 0.0;
+                    forecast_item.main.temp_min = item.containsKey("main") && item["main"].containsKey("temp_min") ? item["main"]["temp_min"].as<double>() : 0.0;
+                    forecast_item.main.temp_max = item.containsKey("main") && item["main"].containsKey("temp_max") ? item["main"]["temp_max"].as<double>() : 0.0;
+                    forecast_item.main.pressure = item.containsKey("main") && item["main"].containsKey("pressure") ? item["main"]["pressure"].as<double>() : 0.0;
+                    forecast_item.main.humidity = item.containsKey("main") && item["main"].containsKey("humidity") ? item["main"]["humidity"].as<double>() : 0.0;
+                    forecast_item.weather.id = item.containsKey("weather") && item["weather"].is<JsonArray>() && item["weather"][0].containsKey("id") ? item["weather"][0]["id"].as<uint32_t>() : 0;
+                    forecast_item.weather.main = item.containsKey("weather") && item["weather"].is<JsonArray>() && item["weather"][0].containsKey("main") ? item["weather"][0]["main"].as<String>() : "";
+                    forecast_item.weather.description = item.containsKey("weather") && item["weather"].is<JsonArray>() && item["weather"][0].containsKey("description") ? item["weather"][0]["description"].as<String>() : "";
+                    forecast_item.weather.icon = item.containsKey("weather") && item["weather"].is<JsonArray>() && item["weather"][0].containsKey("icon") ? item["weather"][0]["icon"].as<String>() : "";
+                    forecast_item.wind.speed = item.containsKey("wind") && item["wind"].containsKey("speed") ? item["wind"]["speed"].as<float>() : 0;
+                    forecast_item.wind.deg = item.containsKey("wind") && item["wind"].containsKey("deg") ? item["wind"]["deg"].as<float>() : 0;
+                    forecast_item.wind.gust = item.containsKey("wind") && item["wind"].containsKey("gust") ? item["wind"]["gust"].as<float>() : 0;
                     g_nm.weather_forecast.list.push_back(forecast_item);
                 }
+                
+                
+
+
+                for(const auto &forecast_item : g_nm.weather_forecast.list) {
+                    LOG_W("Forecast for %s, %s: %.2f°C, %s, %s, Humidity: %.1f%%, Wind: %.1f m/s",
+                        g_nm.weather_forecast.city.name.c_str(),
+                        forecast_item.dt_txt.c_str(),
+                        forecast_item.main.temp,
+                        forecast_item.weather.main.c_str(),
+                        forecast_item.weather.description.c_str(),
+                        forecast_item.main.humidity,
+                        forecast_item.wind.speed
+                    );
+                }
+
+
+
+
+
+
+
+
+
             } else {
                 LOG_E("No weather forecast data found");
             }
-
-            LOG_I("Weather forecast for %s (%s):", g_nm.weather_forecast.city.name.c_str(), g_nm.weather_forecast.city.country.c_str());
-            LOG_I("Timezone: %d, Sunrise: %u, Sunset: %u", g_nm.weather_forecast.city.timezone, g_nm.weather_forecast.city.sunrise, g_nm.weather_forecast.city.sunset);
-            LOG_W("| %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s |", "DateTime", "Temp", "FeelsLike", "TempMin", "TempMax", "Pressure", "Humidity", "Weather");
         }
         thread_cnt++;
     }

@@ -70,9 +70,9 @@ typedef struct{
     uint32_t       visibility;
     weather_info_t weather;
     struct{
-        int         deg;
-        int         gust;
-        int         speed;
+        float         deg;
+        float         gust;
+        float         speed;
     }wind;
     struct{
         String      pod;
@@ -131,8 +131,8 @@ typedef struct{
     uint32_t visibility;
     weather_info_t weather;
     struct{
-        int         deg;
-        int         speed;
+        float         deg;
+        float         speed;
     }wind;
 }weather_realtime_info_t;
 
@@ -200,10 +200,8 @@ typedef struct{
     float               timezone;
     bool                tz_updated;
     std::map<coin_name, ccoin_info> coin_map;
-
     weather_realtime_info_t weather_realtime;
     weather_forecast_info_t weather_forecast;
-
     bool                need_cfg;
     uint8_t             *coin_icon;
     bool                coin_icon_updated;
