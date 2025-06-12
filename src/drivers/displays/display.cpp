@@ -28,7 +28,7 @@ static SemaphoreHandle_t    lvgl_xMutex;
 static lv_obj_t *parent_docker = NULL;
 static lv_obj_t *g_pages[] = {NULL, NULL, NULL, NULL, NULL, NULL};
 static lv_obj_t *loading_page = NULL, *config_page = NULL, *price_page = NULL, *weather_page = NULL, *clock_page = NULL;
-static lv_obj_t *crypto_icon_png = NULL;
+static lv_obj_t *icon_crypto_png = NULL, *lb_crypto_coin_price = NULL;
 static uint16_t g_page_index = PAGE_PRICE;
 
 #include "image_240_240.h"
@@ -49,98 +49,98 @@ LV_FONT_DECLARE(symbol_10)
 LV_FONT_DECLARE(symbol_14)
 LV_FONT_DECLARE(symbol_18)
 LV_FONT_DECLARE(symbol_20)
-static const lv_font_t *lb_loading_progress_font  = &lv_font_montserrat_14;
-static const lv_font_t *lb_loading_slogan_font    = &lv_font_montserrat_18;
-static const lv_font_t *lb_loading_version_check_font = &lv_font_montserrat_14;
-static const lv_font_t *lb_cfg_timeout_font  = &lv_font_montserrat_18;
-static const lv_font_t *lb_version_loading_font  = &lv_font_montserrat_18;
-static const lv_font_t *lb_cfg_version_font  = &lv_font_montserrat_18;
-static const lv_font_t *lb_loading_font  = &lv_font_montserrat_18;
-static const lv_font_t *lb_hashrate_font = &ds_digib_font_36;
-static const lv_font_t *lb_blk_hit_font  = &ds_digib_font_58;
-static const lv_font_t *lb_temp_or_time_font     = &ds_digib_font_14;
-static const lv_font_t *lb_wifi_ip_font  = &ds_digib_font_18;
-static const lv_font_t *lb_wifi_rssi_font = &ds_digib_font_18;
-static const lv_font_t *lb_mpage_price_font     = &ds_digib_font_16;
-static const lv_font_t *lb_uptime_font       = &ds_digib_font_18;
-static const lv_font_t *lb_uptime_unit_font  = &lv_font_montserrat_16;
-static const lv_font_t *lb_wifi_rssi_symbol_font = &lv_font_montserrat_14;
-static const lv_font_t *lb_price_symbol_font     = &symbol_14;
+// static const lv_font_t *lb_loading_progress_font  = &lv_font_montserrat_14;
+// static const lv_font_t *lb_loading_slogan_font    = &lv_font_montserrat_18;
+// static const lv_font_t *lb_loading_version_check_font = &lv_font_montserrat_14;
+// static const lv_font_t *lb_cfg_timeout_font  = &lv_font_montserrat_18;
+// static const lv_font_t *lb_version_loading_font  = &lv_font_montserrat_18;
+// static const lv_font_t *lb_cfg_version_font  = &lv_font_montserrat_18;
+// static const lv_font_t *lb_loading_font  = &lv_font_montserrat_18;
+// static const lv_font_t *lb_hashrate_font = &ds_digib_font_36;
+// static const lv_font_t *lb_blk_hit_font  = &ds_digib_font_58;
+// static const lv_font_t *lb_temp_or_time_font     = &ds_digib_font_14;
+// static const lv_font_t *lb_wifi_ip_font  = &ds_digib_font_18;
+// static const lv_font_t *lb_wifi_rssi_font = &ds_digib_font_18;
+// static const lv_font_t *lb_mpage_price_font     = &ds_digib_font_16;
+// static const lv_font_t *lb_uptime_font       = &ds_digib_font_18;
+// static const lv_font_t *lb_uptime_unit_font  = &lv_font_montserrat_16;
+// static const lv_font_t *lb_wifi_rssi_symbol_font = &lv_font_montserrat_14;
+// static const lv_font_t *lb_price_symbol_font     = &symbol_14;
 
-static const lv_font_t *lb_job_received_font = &ds_digib_font_22;
-static const lv_font_t *lb_net_diff_font     = &ds_digib_font_22;
-static const lv_font_t *lb_local_diff_font   = &ds_digib_font_22;
-static const lv_font_t *lb_shares_font       = &ds_digib_font_22;
+// static const lv_font_t *lb_job_received_font = &ds_digib_font_22;
+// static const lv_font_t *lb_net_diff_font     = &ds_digib_font_22;
+// static const lv_font_t *lb_local_diff_font   = &ds_digib_font_22;
+// static const lv_font_t *lb_shares_font       = &ds_digib_font_22;
 
-static const lv_font_t *lb_clock_pool_font       = &lv_font_montserrat_18;
-static const lv_font_t *lb_clock_price_font      = &ds_digib_font_36;
-static const lv_font_t *lb_miner_version_font    = &ds_digib_font_16;
+// static const lv_font_t *lb_clock_pool_font       = &lv_font_montserrat_18;
+// static const lv_font_t *lb_clock_price_font      = &ds_digib_font_36;
+// static const lv_font_t *lb_miner_version_font    = &ds_digib_font_16;
 
-static const lv_font_t *lb_job_receive_symbol_font        = &symbol_18;
-static const lv_font_t *lb_net_diff_symbol_font           = &symbol_18;
-static const lv_font_t *lb_local_diff_symbol_font         = &symbol_18;
-static const lv_font_t *lb_share_symb_font                = &symbol_18;
+// static const lv_font_t *lb_job_receive_symbol_font        = &symbol_18;
+// static const lv_font_t *lb_net_diff_symbol_font           = &symbol_18;
+// static const lv_font_t *lb_local_diff_symbol_font         = &symbol_18;
+// static const lv_font_t *lb_share_symb_font                = &symbol_18;
 
-static const lv_font_t *lb_clock_hr_font                  = &ds_digib_font_36;
-static const lv_font_t *lb_clock_hr_unit_font             = &lv_font_montserrat_14;
-static const lv_font_t *lb_clock_version_font             = &ds_digib_font_12;
-static const lv_font_t *lb_clock_day_font                 = &ds_digib_font_24;
-static const lv_font_t *lb_clock_hms_font                 = &ds_digib_font_54;
-static const lv_font_t *lb_clock_price_changed_font       = &ds_digib_font_12;
+// static const lv_font_t *lb_clock_hr_font                  = &ds_digib_font_36;
+// static const lv_font_t *lb_clock_hr_unit_font             = &lv_font_montserrat_14;
+// static const lv_font_t *lb_clock_version_font             = &ds_digib_font_12;
+// static const lv_font_t *lb_clock_day_font                 = &ds_digib_font_24;
+// static const lv_font_t *lb_clock_hms_font                 = &ds_digib_font_54;
+// static const lv_font_t *lb_clock_price_changed_font       = &ds_digib_font_12;
 
-static const lv_font_t *lb_swarm_total_hr_font            = &ds_digib_font_22;
-static const lv_font_t *lb_swarm_best_diff_font           = &ds_digib_font_22;
-static const lv_font_t *lb_swarm_workers_font             = &ds_digib_font_22;
-
-
-static const lv_coord_t lb_version_loading_coord[2] = {(lv_coord_t)(SCREEN_WIDTH - (int16_t)(String(CURRENT_VERSION).length() * 8)), 2};
-static const lv_coord_t lb_version_config_coord[2] = {(lv_coord_t)(SCREEN_WIDTH - (int16_t)(String(CURRENT_VERSION).length() * 12)), 10};  
-static const lv_coord_t lb_timeout_config_coord[2] = {(lv_coord_t)(SCREEN_WIDTH - (int16_t)(String(CURRENT_VERSION).length() * 11)), SCREEN_HEIGHT - 35};  
-static const lv_coord_t lb_mine_page_ver_coord[2]  = {10, 128};
-static const lv_coord_t lb_slogan_loading_coord[2] = {0, 10};  
-static const lv_coord_t lb_version_check_loading_coord[2] = {0, 40};
-static const lv_coord_t lb_flash_addr_loading_coord[2] = {0, 70};
-static const lv_coord_t lb_hashrate_coord[2] = {125, 160};
-static const lv_coord_t lb_blk_hit_coord[2] = {11, 65};
-static const lv_coord_t lb_temp_or_time_coord[2] = {2, 5};
-static const lv_coord_t lb_uptime_day_coord[2] = {58, 5};
-static const lv_coord_t lb_wifi_ip_coord[2] = {13, 175};
-static const lv_coord_t lb_wifi_rssi_coord[2] = {185, 5};
-
-static const lv_coord_t lb_price_coord[2] = {40, 145};
-static const lv_coord_t lb_price_symbol_coord[2] = {20, 145};
-
-static const lv_coord_t lb_uptime_day_unit_coord[2] = {86, 5};
-static const lv_coord_t lb_uptime_hms_coord[2] = {96, 5};
-static const lv_coord_t lb_wifi_rssi_symbol_coord[2] = {165, 5};
+// static const lv_font_t *lb_swarm_total_hr_font            = &ds_digib_font_22;
+// static const lv_font_t *lb_swarm_best_diff_font           = &ds_digib_font_22;
+// static const lv_font_t *lb_swarm_workers_font             = &ds_digib_font_22;
 
 
+// static const lv_coord_t lb_version_loading_coord[2] = {(lv_coord_t)(SCREEN_WIDTH - (int16_t)(String(CURRENT_VERSION).length() * 8)), 2};
+// static const lv_coord_t lb_version_config_coord[2] = {(lv_coord_t)(SCREEN_WIDTH - (int16_t)(String(CURRENT_VERSION).length() * 12)), 10};  
+// static const lv_coord_t lb_timeout_config_coord[2] = {(lv_coord_t)(SCREEN_WIDTH - (int16_t)(String(CURRENT_VERSION).length() * 11)), SCREEN_HEIGHT - 35};  
+// static const lv_coord_t lb_mine_page_ver_coord[2]  = {10, 128};
+// static const lv_coord_t lb_slogan_loading_coord[2] = {0, 10};  
+// static const lv_coord_t lb_version_check_loading_coord[2] = {0, 40};
+// static const lv_coord_t lb_flash_addr_loading_coord[2] = {0, 70};
+// static const lv_coord_t lb_hashrate_coord[2] = {125, 160};
+// static const lv_coord_t lb_blk_hit_coord[2] = {11, 65};
+// static const lv_coord_t lb_temp_or_time_coord[2] = {2, 5};
+// static const lv_coord_t lb_uptime_day_coord[2] = {58, 5};
+// static const lv_coord_t lb_wifi_ip_coord[2] = {13, 175};
+// static const lv_coord_t lb_wifi_rssi_coord[2] = {185, 5};
+
+// static const lv_coord_t lb_price_coord[2] = {40, 145};
+// static const lv_coord_t lb_price_symbol_coord[2] = {20, 145};
+
+// static const lv_coord_t lb_uptime_day_unit_coord[2] = {86, 5};
+// static const lv_coord_t lb_uptime_hms_coord[2] = {96, 5};
+// static const lv_coord_t lb_wifi_rssi_symbol_coord[2] = {165, 5};
 
 
-static const lv_coord_t lb_job_received_coord[2] = {112 + 28, 15 + 14};
-static const lv_coord_t lb_net_diff_coord[2]     = {112 + 28, 2*15 + 14*2 + 1};
-static const lv_coord_t lb_local_diff_coord[2]   = {112 + 28, 3*15 + 14*3};
-static const lv_coord_t lb_shares_coord[2]       = {112 + 28, 4*15 + 14*4 - 1};
 
-static const lv_coord_t lb_job_receive_symbol_coord[2]  = {112, 15 +15};
-static const lv_coord_t lb_net_diff_symbol_coord[2]     = {112, 2*15 +15*2 + 1};
-static const lv_coord_t lb_local_diff_symbol_coord[2]   = {112, 3*15 +15*3};
-static const lv_coord_t lb_share_symb_coord[2]          = {112 - 3, 4*15 + 15*4 - 3};
 
-static const lv_coord_t lb_clock_coord[2] = {0, 5};
-static const lv_coord_t lb_clock_hr_coord[2] = {95 + 45 , 2};
-static const lv_coord_t lb_clock_hr_unit_coord[2] = {0, 18};
-static const lv_coord_t lb_clock_version_coord[2] = {8, 5};
+// static const lv_coord_t lb_job_received_coord[2] = {112 + 28, 15 + 14};
+// static const lv_coord_t lb_net_diff_coord[2]     = {112 + 28, 2*15 + 14*2 + 1};
+// static const lv_coord_t lb_local_diff_coord[2]   = {112 + 28, 3*15 + 14*3};
+// static const lv_coord_t lb_shares_coord[2]       = {112 + 28, 4*15 + 14*4 - 1};
 
-static const lv_coord_t lb_clock_day_coord[2] = {0, 0};
-static const lv_coord_t lb_clock_hms_coord[2] = {0, 0};
-static const lv_coord_t lb_clock_price_coord[2] = {2, 2};
-static const lv_coord_t lb_clock_pool_coord[2] = {1, -6};
-static const lv_coord_t lb_clock_price_changed_coord[2] = {1, 25};
+// static const lv_coord_t lb_job_receive_symbol_coord[2]  = {112, 15 +15};
+// static const lv_coord_t lb_net_diff_symbol_coord[2]     = {112, 2*15 +15*2 + 1};
+// static const lv_coord_t lb_local_diff_symbol_coord[2]   = {112, 3*15 +15*3};
+// static const lv_coord_t lb_share_symb_coord[2]          = {112 - 3, 4*15 + 15*4 - 3};
 
-static const lv_coord_t lb_swarm_best_diff_coord[2] = {2, 215};
-static const lv_coord_t lb_swarm_workers_coord[2]   = {106, 215};
-static const lv_coord_t lb_swarm_total_hr_coord[2]  = {170, 215};
+// static const lv_coord_t lb_clock_coord[2] = {0, 5};
+// static const lv_coord_t lb_clock_hr_coord[2] = {95 + 45 , 2};
+// static const lv_coord_t lb_clock_hr_unit_coord[2] = {0, 18};
+// static const lv_coord_t lb_clock_version_coord[2] = {8, 5};
+
+// static const lv_coord_t lb_clock_day_coord[2] = {0, 0};
+// static const lv_coord_t lb_clock_hms_coord[2] = {0, 0};
+// static const lv_coord_t lb_clock_price_coord[2] = {2, 2};
+// static const lv_coord_t lb_clock_pool_coord[2] = {1, -6};
+// static const lv_coord_t lb_clock_price_changed_coord[2] = {1, 25};
+
+// static const lv_coord_t lb_swarm_best_diff_coord[2] = {2, 215};
+// static const lv_coord_t lb_swarm_workers_coord[2]   = {106, 215};
+// static const lv_coord_t lb_swarm_total_hr_coord[2]  = {170, 215};
 
 
 const lv_img_dsc_t loading_img = {
@@ -152,7 +152,7 @@ const lv_img_dsc_t loading_img = {
         .h = SCREEN_HEIGHT,  
     },
     .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)clock_img_array, 
+    .data = (const uint8_t *)global_img_array, 
 };
 
 const lv_img_dsc_t config_img = {
@@ -164,7 +164,7 @@ const lv_img_dsc_t config_img = {
         .h = SCREEN_HEIGHT,  
     },
     .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)clock_img_array, 
+    .data = (const uint8_t *)global_img_array, 
 };
 
 const lv_img_dsc_t miner_img = {
@@ -176,7 +176,7 @@ const lv_img_dsc_t miner_img = {
         .h = SCREEN_HEIGHT,  
     },
     .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)clock_img_array, 
+    .data = (const uint8_t *)global_img_array, 
 };
 
 const lv_img_dsc_t clock_img = {
@@ -188,7 +188,7 @@ const lv_img_dsc_t clock_img = {
         .h = SCREEN_HEIGHT,  
     },
     .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)clock_img_array, 
+    .data = (const uint8_t *)global_img_array, 
 };
 
 #if defined(HAS_SCREEN_SAVER_FEATURE)
@@ -257,10 +257,9 @@ static void screen_init(){
       tft.setRotation(0);
   }
 
-  //等tft初始化完成后再重新设置背光控制PWM
   if(TFT_BL!=-1){
-    int freq = 5*1000;    // PWM频率，单位Hz 
-    int resolution = 8;   // PWM分辨率，8位
+    int freq = 5*1000;    
+    int resolution = 8;  
     pinMode(TFT_BL, OUTPUT);
     ledcSetup(blpwmChannel, freq, resolution);
     ledcAttachPin(TFT_BL, blpwmChannel);
@@ -380,7 +379,6 @@ static void ui_layout_init(void){
   lv_img_set_src(miner_img_obj, &miner_img);
   lv_obj_set_size(miner_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(miner_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-  
   // Create clock page  
   clock_page = lv_obj_create(parent_docker);
   lv_obj_set_size(clock_page, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -414,29 +412,56 @@ static void ui_saver_page_init(){
 }
 
 
-static void ui_price_page_refresh(){
-  // https://s2.coinmarketcap.com/static/img/coins/64x64/1.png
-  if(g_nm.coin_map.empty()) return;
+static void ui_price_page_refresh(crypto_coin_node_t &coin){
+  // https://s2.coinmarketcap.com/static/img/coins/32x32/1.png
+  if(g_nm.coin_price_rank.empty()) return;
   if(g_pages[PAGE_PRICE] == NULL) return;
-  if(g_nm.coin_icon == NULL) return;
-  static bool first = true;
+  if(coin.icon.addr == NULL || coin.icon.size == 0)return;
+  if(coin.icon.updated == false)return;
+  static lv_img_dsc_t coin_icon_img_dsc = {
+    .header = {
+        .cf = LV_IMG_CF_RAW_ALPHA, 
+        .always_zero = 0,
+        .reserved = 0,
+        .w = 0,  
+        .h = 0,  
+    },
+    .data_size = 0, 
+    .data = NULL,   
+  };
 
 
-  static lv_img_dsc_t coin_icon_img_dsc;
-  coin_icon_img_dsc.header.always_zero = 0;
-  coin_icon_img_dsc.header.w = 0; // PNG 不需要手动指定宽高
-  coin_icon_img_dsc.header.h = 0;
-  coin_icon_img_dsc.header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA; 
-  coin_icon_img_dsc.data_size = 2691;
-  coin_icon_img_dsc.data = (const uint8_t *)g_nm.coin_icon;
+  //update coin icon image descriptor
+  coin_icon_img_dsc.data_size = coin.icon.size;
+  coin_icon_img_dsc.data      = (const uint8_t *)coin.icon.addr;
 
-  if(first && g_nm.coin_icon_updated){
-      crypto_icon_png = lv_img_create(g_pages[PAGE_PRICE]);
-      lv_img_set_src(crypto_icon_png, &coin_icon_img_dsc);  // 直接传二进制PNG数据指针
-      lv_obj_align(crypto_icon_png, LV_ALIGN_TOP_LEFT, 0, 0);
-      // LOG_W("icon size: %d x %d", lv_obj_get_width(crypto_icon_png), lv_obj_get_height(crypto_icon_png));
-      first = false;
+
+  if(icon_crypto_png == NULL) {
+      icon_crypto_png = lv_img_create(g_pages[PAGE_PRICE]);
+      lv_obj_align(icon_crypto_png, LV_ALIGN_TOP_LEFT, 0, 3);
   }
+
+  if(lb_crypto_coin_price == NULL) {
+      lb_crypto_coin_price = lv_label_create(g_pages[PAGE_PRICE]);
+      lv_color_t font_color = lv_color_hex(0xFFFFFF);
+      lv_obj_set_width(lb_crypto_coin_price, SCREEN_WIDTH);
+      lv_obj_set_style_text_color(lb_crypto_coin_price, font_color, LV_PART_MAIN); 
+      lv_obj_set_style_text_font(lb_crypto_coin_price, &lv_font_montserrat_34, 0);
+      lv_obj_align(lb_crypto_coin_price, LV_ALIGN_TOP_RIGHT, 0, 0);
+  }
+
+
+  //update coin price label
+  String price_str = "$" + String(coin.price.realtime);
+  lv_coord_t width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), &lv_font_montserrat_34, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_crypto_coin_price, width);
+
+
+
+
+
+  lv_label_set_text_fmt(lb_crypto_coin_price, "%s", price_str);
+  lv_img_set_src(icon_crypto_png, &coin_icon_img_dsc);
 }
 
 static void ui_clock_page_refresh(){
@@ -520,34 +545,20 @@ static void ui_refresh_thread(void *args){
   LOG_I("%s thread started on core %d...", name, xPortGetCoreID());
   free(name);
 
-
-  bool saver_active = false;
-  uint32_t freq = 1000 * g_nm.screen.refresh_interval;
+  uint32_t refresh = 1000 * g_nm.screen.refresh_interval;
   while (true){
-    uint32_t start = millis();
-    
-#if defined(HAS_SCREEN_SAVER_FEATURE)
-    if((g_nm.minerstatus.job_received > 0) && (g_nm.screen.saver_enable == true)){
-      saver_active = (start - g_nm.screen.last_operaion > 1000 * 60*10);
-    }
-#endif
-
-    freq = (saver_active) ? 50 : 1000 * g_nm.screen.refresh_interval;
-    while(millis() - start < freq){
-      delay(50);
-    }
-    
+    delay(refresh);
 
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
-#if defined(HAS_SCREEN_SAVER_FEATURE)
-      if(saver_active)                    ui_saver_page_refresh();
-      else                                ui_delete_screensaver();
-#endif
-      if(g_page_index == PAGE_PRICE)      ui_price_page_refresh();
+      if(g_page_index == PAGE_PRICE) {
+          static auto it = g_nm.coin_price_rank.begin();
+          if(!g_nm.coin_price_rank.empty()) {
+              ui_price_page_refresh(it->second);
+              it++;
+              it = (it == g_nm.coin_price_rank.end()) ? g_nm.coin_price_rank.begin() : it;
+          }
+      }
       else if(g_page_index == PAGE_CLOCK) ui_clock_page_refresh();
-#if defined(HAS_GAUGE_FEATURE)
-      else if(g_page_index == PAGE_GAUGE || g_page_index == PAGE_CONFIG) ui_gauge_page_refresh();
-#endif
       //release mutex
       xSemaphoreGive(lvgl_xMutex); 
     }
@@ -656,6 +667,17 @@ void ui_switch_next_page_cb(){
   g_nm.screen.last_operaion = millis();
 }
 
+
+
+
+
+
+void lvgl_log_cb(const char * buf)
+{
+    Serial.println(buf);
+}
+
+
 void display_thread(void *args){
   char *name = (char*)malloc(20);
   strcpy(name, (char*)args);
@@ -666,13 +688,17 @@ void display_thread(void *args){
 
   lv_init();
 
+#if LV_USE_LOG
+  lv_log_register_print_cb(lvgl_log_cb); 
+#endif
+
   ui_init();
 
   ui_layout_init();
   
   //lvgl tick task
   String taskName = "(lvgltick)";
-  xTaskCreatePinnedToCore(lvgl_tick_task, taskName.c_str(), 1024*3.3, (void*)taskName.c_str(), TASK_PRIORITY_LVGL_DRV, &task_lvgl_tick, LvglTaskCore);
+  xTaskCreatePinnedToCore(lvgl_tick_task, taskName.c_str(), 1024*4, (void*)taskName.c_str(), TASK_PRIORITY_LVGL_DRV, &task_lvgl_tick, LvglTaskCore);
   delay(500);//wait a bit for lvgl tick task to start, necessary for lvgl to work properly
 
   taskName = "(uirefresh)";

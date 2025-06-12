@@ -94,7 +94,6 @@ typedef struct{
     uint32_t       cnt; // Number of forecast nodes
     String         cod; // Response code
     uint32_t       message; // Response message
-    // forecast_node_t *list; // Array of forecast nodes
     std::list<forecast_node_t> list; // List of forecast nodes
 }weather_forecast_info_t;
 
@@ -136,7 +135,28 @@ typedef struct{
     }wind;
 }weather_realtime_info_t;
 
+/*************************** air pollution ***************************/
+typedef struct{
+    struct{
+        float    co;    //ug/m3
+        float    nh3;   //ug/m3
+        float    no;    //ug/m3
+        float    no2;   //ug/m3
+        float    o3;    //ug/m3
+        float    pm10;  //ug/m3
+        float    pm2_5; //ug/m3
+        float    so2;   //ug/m3
+    }components;
+    struct{
+        int      aqi; // Air Quality Index
+    }main;
+    uint32_t      dt;
+}air_pollution_node_t;
 
+typedef struct{
+    coord_info_t   coord;
+    std::list<air_pollution_node_t> list; // List of forecast nodes
+}air_pollution_info_t;
 
 /*************************** Crypto Price ***************************/
 typedef struct{
@@ -154,14 +174,23 @@ typedef struct{
 }crypto_price_info_t;
 
 
+
+
+
+
 typedef struct{
     String                  name;
+    uint16_t                rank;
     int                     id; 
     String                  symbol;
     String                  slug;
     crypto_price_info_t     price;
-    uint16_t                rank;
-}crypto_coin_info_t;
+    struct{
+        uint8_t             *addr; // Pointer to icon data, can be NULL if not available
+        uint16_t            size; // Size of the icon in bytes
+        bool                updated; // Whether the icon has been updated
+    }icon;//png icon data
+}crypto_coin_node_t;
 
 typedef struct{
     String      fw_version;
@@ -190,8 +219,8 @@ typedef struct{
     uint16_t  cnt;
 }screen_info_t;
 
-typedef String             coin_name;
-typedef crypto_coin_info_t ccoin_info;
+typedef String             ccoin_name;
+typedef crypto_coin_node_t ccoin_node;
 
 typedef struct{
     board_info_t        board;
@@ -199,12 +228,11 @@ typedef struct{
     connect_info_t      connection;
     float               timezone;
     bool                tz_updated;
-    std::map<coin_name, ccoin_info> coin_map;
+    std::map<ccoin_name, ccoin_node> coin_price_rank;
     weather_realtime_info_t weather_realtime;
     weather_forecast_info_t weather_forecast;
+    air_pollution_info_t    air_pollution;
     bool                need_cfg;
-    uint8_t             *coin_icon;
-    bool                coin_icon_updated;
 }nm_sal_t;
 
 extern nm_sal_t g_nm;

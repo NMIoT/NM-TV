@@ -11,7 +11,7 @@
 #include "helper.h"
 
 static String  taskName = "";
-TaskHandle_t   task_btn = NULL, task_market = NULL, task_monitor = NULL, task_lvgl_tick = NULL, task_ui_refresh = NULL;
+TaskHandle_t   task_btn = NULL, task_api = NULL, task_monitor = NULL, task_lvgl_tick = NULL, task_ui_refresh = NULL;
 nm_sal_t       g_nm;
 
 void setup() {
@@ -34,7 +34,7 @@ void setup() {
   }
   /**************************************************************** INIT BUTTON ***********************************************************/
   taskName = "(button)";
-  xTaskCreatePinnedToCore(button_thread_entry, taskName.c_str(), 1024*2, (void*)taskName.c_str(), TASK_PRIORITY_BTN, &task_btn, BtnTaskCore);
+  xTaskCreatePinnedToCore(button_thread_entry, taskName.c_str(), 1024*3, (void*)taskName.c_str(), TASK_PRIORITY_BTN, &task_btn, BtnTaskCore);
   delay(50);
   /*********************************************************** INIT DISPLAY ***************************************************************/
   taskName = "(ui)";
@@ -87,7 +87,7 @@ void setup() {
   delete tz;
   /************************************************************** CREATE MARKET THREAD ***************************************************/
   taskName = "(nmapi)";
-  xTaskCreatePinnedToCore(nmapi_thread_entry, taskName.c_str(), 1024*20, (void*)taskName.c_str(), TASK_PRIORITY_MARKET, &task_market, MarketTaskCore);
+  xTaskCreatePinnedToCore(nmapi_thread_entry, taskName.c_str(), 1024*8, (void*)taskName.c_str(), TASK_PRIORITY_MARKET, &task_api, MarketTaskCore);
   delay(50);
   /************************************************************** CREATE MONITOR THREAD ***************************************************/
   taskName = "(monitor)";
@@ -102,6 +102,7 @@ void loop() {
   static UBaseType_t highWaterMark = uxTaskGetStackHighWaterMark(NULL);
   static char *taskName = pcTaskGetName(NULL);
   if(millis() - start > 1000*2){
+      LOG_W("----------------------------------------------------------------");
       if(task_btn != NULL) {
           highWaterMark = uxTaskGetStackHighWaterMark(task_btn);
           taskName = pcTaskGetName(task_btn);
@@ -117,39 +118,14 @@ void loop() {
           taskName = pcTaskGetName(task_ui_refresh);
           LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
       }
-      if(task_led != NULL) {
-          highWaterMark = uxTaskGetStackHighWaterMark(task_led);
-          taskName = pcTaskGetName(task_led);
-          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
-      }
-      if(task_market != NULL) {
-          highWaterMark = uxTaskGetStackHighWaterMark(task_market);
-          taskName = pcTaskGetName(task_market);
-          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
-      }
-      if(task_swarm != NULL) {
-          highWaterMark = uxTaskGetStackHighWaterMark(task_swarm);
-          taskName = pcTaskGetName(task_swarm);
-          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
-      }
-      if(task_stratum != NULL) {
-          highWaterMark = uxTaskGetStackHighWaterMark(task_stratum);
-          taskName = pcTaskGetName(task_stratum);
+      if(task_api != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_api);
+          taskName = pcTaskGetName(task_api);
           LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
       }
       if(task_monitor != NULL) {
           highWaterMark = uxTaskGetStackHighWaterMark(task_monitor);
           taskName = pcTaskGetName(task_monitor);
-          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
-      }
-      if(task_nminer != NULL) {
-          highWaterMark = uxTaskGetStackHighWaterMark(task_nminer);
-          taskName = pcTaskGetName(task_nminer);
-          LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
-      }
-      if(task_tminer != NULL) {
-          highWaterMark = uxTaskGetStackHighWaterMark(task_tminer);
-          taskName = pcTaskGetName(task_tminer);
           LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
       }
       start = millis();

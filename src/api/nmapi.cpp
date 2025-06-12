@@ -2,7 +2,7 @@
 #include "logger.h"
 #include <ArduinoJson.h>
 #include "global.h"
-
+#include "helper.h"
 
 #define NMAPI_HOST "api.nmiot.net" // The host for the NMIoT API
 #define NMAPI_PORT 443             // The port for the NMIoT API, usually 443 for HTTPS
@@ -77,22 +77,45 @@ String NMIoTAPIClass::get_weather_forecast(const double &lat, const double &lon,
     return response;
 }
 
+String NMIoTAPIClass::get_air_pollution(const double &lat, const double &lon){
+    String url = "/v1/weather/air_pollution?lat=" + String(lat, 6) + "&lon=" + String(lon, 6);
+    LOG_D("Requesting: %s", url.c_str());
+    WiFiClientSecure    sslwifi;
+    sslwifi.setInsecure(); // Disable SSL certificate verification for testing purposes
+    HttpClient httpclient(sslwifi, NMAPI_HOST, NMAPI_PORT);
 
+    int httpCode = httpclient.get(url);
+    if (httpCode != 0) {
+        LOG_E("HTTP GET failed, code: %d", httpCode);
+        return "";
+    }
 
- size_t NMIoTAPIClass::download_coin_icon(int coin_id, uint8_t *buf, size_t buf_size){ 
+    int status = httpclient.responseStatusCode();
+    if (status != 200) {
+        LOG_E("HTTP response status: %d", status);
+        return "";
+    }
+
+    String response = httpclient.responseBody();
+    return response;
+}
+
+size_t NMIoTAPIClass::download_coin_icon(int coin_id, uint8_t *buf, size_t buf_size) {
     if (!buf) {
         LOG_E("icon buffer is null");
         return 0;
     }
-    // Construct the URL for the icon image
-    String url = "/static/img/coins/64x64/" + String(coin_id) + ".png";
-    WiFiClientSecure    sslwifi;
-    sslwifi.setInsecure(); // Disable SSL certificate verification for testing purposes
+    String url = "/static/img/coins/32x32/" + String(coin_id) + ".png";
+    WiFiClientSecure sslwifi;
+    sslwifi.setInsecure();
     HttpClient http(sslwifi, "s2.coinmarketcap.com", 443);
+
+    http.sendHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
     int httpCode = http.get(url.c_str());
     if (httpCode != HTTP_SUCCESS) {
         LOG_E("HTTP GET failed, code: %d", httpCode);
+        memset(buf, 0, buf_size);
         return 0;
     }
 
@@ -100,25 +123,27 @@ String NMIoTAPIClass::get_weather_forecast(const double &lat, const double &lon,
     if (size <= 0) {
         LOG_E("Invalid content length: %d", size);
         http.endRequest();
+        memset(buf, 0, buf_size);
         return 0;
     }
 
     if (size > buf_size) {
         LOG_E("Buffer size (%d) is smaller than content length (%d)", buf_size, size);
         http.endRequest();
+        memset(buf, 0, buf_size);
         return 0;
     }
 
     int s = http.readBytes(buf, size);
     if (s != size) {
         LOG_W("Downloaded %d/%d bytes from %s", s, size, url.c_str());
-        return s;
+        return 0;
     } else {
-        LOG_I("Downloaded %d bytes from %s", s, url.c_str());
+        // LOG_I("Downloaded %d bytes from %s", s, url.c_str());
     }
 
     http.endRequest();
-    return size;
+    return s; 
 }
 
 
@@ -138,7 +163,7 @@ void nmapi_thread_entry(void *args){
     uint8_t   fail_count = 0;
     uint32_t  thread_cnt = 0;
     while(true){
-        DynamicJsonDocument doc    = DynamicJsonDocument(1024 * 20);
+        DynamicJsonDocument doc    = DynamicJsonDocument(1024 * 16);
         DeserializationError error = DeserializationError::Ok;
         String json = "";
         delay(1000);
@@ -149,9 +174,10 @@ void nmapi_thread_entry(void *args){
             continue;
         }
 
-        /***********************************update crypto rank price data every 60s*************************************/
+        /***********************************update crypto rank price data every 60s************************************/
         if(thread_cnt % 30 == 0) {
             json = api->get_crypto_rank_price(1, 10, "USDT");
+            // LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
                 LOG_E("Failed to get crypto rank price data");
                 thread_cnt++;
@@ -172,41 +198,46 @@ void nmapi_thread_entry(void *args){
                 const char* name           = coin.containsKey("name") ? coin["name"].as<const char*>() : "unknown";
                 JsonObject quote           = coin["quote"].containsKey("USDT") ? coin["quote"]["USDT"] : JsonObject();
 
-                g_nm.coin_map[name].price.realtime = quote.containsKey("price") ? quote["price"].as<double>() : 0.0;
-                g_nm.coin_map[name].rank           = coin.containsKey("cmc_rank") ? coin["cmc_rank"].as<int>() : -1;
-                g_nm.coin_map[name].name           = name;
-                g_nm.coin_map[name].id             = coin.containsKey("id") ? coin["id"].as<int>() : -1;
-                g_nm.coin_map[name].symbol         = coin.containsKey("symbol") ? coin["symbol"].as<const char*>() : "unknown";
-                g_nm.coin_map[name].slug           = coin.containsKey("slug") ? coin["slug"].as<const char*>() : "unknown";
-                g_nm.coin_map[name].price.volume_24h = quote.containsKey("volume_24h") ? quote["volume_24h"].as<double>() : 0.0;
-                g_nm.coin_map[name].price.volume_change_24h  = quote.containsKey("volume_change_24h") ? quote["volume_change_24h"].as<double>() : 0.0;
-                g_nm.coin_map[name].price.market_cap         = quote.containsKey("market_cap") ? quote["market_cap"].as<double>() : 0.0;
-                g_nm.coin_map[name].price.percent_change_1h  = quote.containsKey("percent_change_1h") ? quote["percent_change_1h"].as<double>() : 0.0;
-                g_nm.coin_map[name].price.percent_change_24h = quote.containsKey("percent_change_24h") ? quote["percent_change_24h"].as<double>() : 0.0;
-                g_nm.coin_map[name].price.percent_change_7d  = quote.containsKey("percent_change_7d") ? quote["percent_change_7d"].as<double>() : 0.0;
-                g_nm.coin_map[name].price.percent_change_30d = quote.containsKey("percent_change_30d") ? quote["percent_change_30d"].as<double>() : 0.0;
-                g_nm.coin_map[name].price.percent_change_60d = quote.containsKey("percent_change_60d") ? quote["percent_change_60d"].as<double>() : 0.0;
-                g_nm.coin_map[name].price.percent_change_90d = quote.containsKey("percent_change_90d") ? quote["percent_change_90d"].as<double>() : 0.0;
-                g_nm.coin_map[name].price.last_updated       = coin.containsKey("last_updated") ? coin["last_updated"].as<const char*>() : "unknown";
+                g_nm.coin_price_rank[name].price.realtime = quote.containsKey("price") ? quote["price"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].rank           = coin.containsKey("cmc_rank") ? coin["cmc_rank"].as<int>() : -1;
+                g_nm.coin_price_rank[name].name           = name;
+                g_nm.coin_price_rank[name].id             = coin.containsKey("id") ? coin["id"].as<int>() : -1;
+                g_nm.coin_price_rank[name].symbol         = coin.containsKey("symbol") ? coin["symbol"].as<const char*>() : "unknown";
+                g_nm.coin_price_rank[name].slug           = coin.containsKey("slug") ? coin["slug"].as<const char*>() : "unknown";
+                g_nm.coin_price_rank[name].price.volume_24h = quote.containsKey("volume_24h") ? quote["volume_24h"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].price.volume_change_24h  = quote.containsKey("volume_change_24h") ? quote["volume_change_24h"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].price.market_cap         = quote.containsKey("market_cap") ? quote["market_cap"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].price.percent_change_1h  = quote.containsKey("percent_change_1h") ? quote["percent_change_1h"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].price.percent_change_24h = quote.containsKey("percent_change_24h") ? quote["percent_change_24h"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].price.percent_change_7d  = quote.containsKey("percent_change_7d") ? quote["percent_change_7d"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].price.percent_change_30d = quote.containsKey("percent_change_30d") ? quote["percent_change_30d"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].price.percent_change_60d = quote.containsKey("percent_change_60d") ? quote["percent_change_60d"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].price.percent_change_90d = quote.containsKey("percent_change_90d") ? quote["percent_change_90d"].as<double>() : 0.0;
+                g_nm.coin_price_rank[name].price.last_updated       = coin.containsKey("last_updated") ? coin["last_updated"].as<const char*>() : "unknown";
 
                 LOG_I("| %6d | %-12s | %4d | %10.2f | %16.1f | %6.2f%% | %6.2f%% | %15s |",
-                    g_nm.coin_map[name].id,
-                    g_nm.coin_map[name].slug,
-                    g_nm.coin_map[name].rank,
-                    g_nm.coin_map[name].price.realtime,
-                    g_nm.coin_map[name].price.market_cap,
-                    g_nm.coin_map[name].price.percent_change_1h,
-                    g_nm.coin_map[name].price.percent_change_24h,
-                    g_nm.coin_map[name].price.last_updated.c_str()
+                    g_nm.coin_price_rank[name].id,
+                    g_nm.coin_price_rank[name].slug,
+                    g_nm.coin_price_rank[name].rank,
+                    g_nm.coin_price_rank[name].price.realtime,
+                    g_nm.coin_price_rank[name].price.market_cap,
+                    g_nm.coin_price_rank[name].price.percent_change_1h,
+                    g_nm.coin_price_rank[name].price.percent_change_24h,
+                    g_nm.coin_price_rank[name].price.last_updated.c_str()
                 );
             }
             doc.clear();
 
-            if(g_nm.coin_icon == NULL){
-                size_t png_max = 1024 * 5; // Set a maximum size for the icon buffer
-                g_nm.coin_icon = (uint8_t*)malloc(png_max); 
-                size_t size = NMIoTAPIClass::download_coin_icon(1, g_nm.coin_icon, png_max); // Download the icon for the coin
-                g_nm.coin_icon_updated = (size > 0); // Set the flag to true if the icon was downloaded successfully
+            size_t png_max = 1024 * 2;
+            for(auto &coin : g_nm.coin_price_rank) {
+                if(coin.second.icon.addr != NULL) continue; // Skip if the icon already exists
+
+                uint8_t* buf             = (uint8_t*)malloc(png_max); // Allocate a buffer for the icon
+                coin.second.icon.size    = NMIoTAPIClass::download_coin_icon(coin.second.id, buf, png_max); // Download the icon for the coin
+                coin.second.icon.updated = (coin.second.icon.size > 0); // Set the flag to true if the icon was downloaded successfully
+                coin.second.icon.addr    = (uint8_t*)malloc(coin.second.icon.size); // Allocate memory for the icon address
+                memcpy(coin.second.icon.addr, buf, coin.second.icon.size); // Copy the downloaded icon to the address
+                free(buf); // Free the temporary buffer after copying
             }
         }
         /************************************update weather realtime data every 10m************************************/
@@ -275,8 +306,8 @@ void nmapi_thread_entry(void *args){
                 LOG_E("No weather data found");
             }
         }
-        /************************************update weather forecast data every 15m ************************************/
-        if((thread_cnt + 20) % (60*2) == 0) {
+        /************************************update weather forecast data every 15m ***********************************/
+        if((thread_cnt + 20) % (60*1) == 0) {
             double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_weather_forecast(lat, lon, 8);
             // LOG_W("%s", json.c_str());
@@ -357,6 +388,61 @@ void nmapi_thread_entry(void *args){
 
             } else {
                 LOG_E("No weather forecast data found");
+            }
+        }
+        /************************************update air pollution data every 15m **************************************/
+        if((thread_cnt + 40) % (60*1) == 0){
+            double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
+            json = api->get_air_pollution(lat, lon);
+            // LOG_W("%s", json.c_str());
+            if(json.isEmpty()) {
+                LOG_E("Failed to get air pollution data");
+                thread_cnt++;
+                continue;
+            }
+
+            // Deserialize the JSON response
+            doc.clear();
+            error = deserializeJson(doc, json);
+            if (error) {
+                LOG_E("deserializeJson() failed: %s", error.c_str());
+                thread_cnt++;
+                continue;
+            }
+
+            // Extract the air pollution data
+            JsonObject air_pollution = doc.as<JsonObject>();
+            if (!air_pollution.isNull()) {
+                g_nm.air_pollution.coord.lat = air_pollution.containsKey("coord") && air_pollution["coord"].containsKey("lat") ? air_pollution["coord"]["lat"].as<double>() : 0.0;
+                g_nm.air_pollution.coord.lon = air_pollution.containsKey("coord") && air_pollution["coord"].containsKey("lon") ? air_pollution["coord"]["lon"].as<double>() : 0.0;
+                g_nm.air_pollution.list.clear(); // Clear the previous air pollution data
+                JsonArray list = air_pollution.containsKey("list") ? air_pollution["list"].as<JsonArray>() : JsonArray();
+                for (JsonObject item : list) {
+                    air_pollution_node_t pollution_item;
+                    pollution_item.dt = item.containsKey("dt") ? item["dt"].as<uint32_t>() : 0;
+                    pollution_item.main.aqi = item.containsKey("main") && item["main"].containsKey("aqi") ? item["main"]["aqi"].as<int>() : 0;
+                    pollution_item.components.co = item.containsKey("components") && item["components"].containsKey("co") ? item["components"]["co"].as<float>() : 0.0;
+                    pollution_item.components.no = item.containsKey("components") && item["components"].containsKey("no") ? item["components"]["no"].as<float>() : 0.0;
+                    pollution_item.components.no2 = item.containsKey("components") && item["components"].containsKey("no2") ? item["components"]["no2"].as<float>() : 0.0;
+                    pollution_item.components.o3 = item.containsKey("components") && item["components"].containsKey("o3") ? item["components"]["o3"].as<float>() : 0.0;
+                    pollution_item.components.so2 = item.containsKey("components") && item["components"].containsKey("so2") ? item["components"]["so2"].as<float>() : 0.0;
+                    pollution_item.components.pm2_5 = item.containsKey("components") && item["components"].containsKey("pm2_5") ? item["components"]["pm2_5"].as<float>() : 0.0;
+                    pollution_item.components.pm10 = item.containsKey("components") && item["components"].containsKey("pm10") ? item["components"]["pm10"].as<float>() : 0.0;
+                    pollution_item.components.nh3 = item.containsKey("components") && item["components"].containsKey("nh3") ? item["components"]["nh3"].as<float>() : 0.0;
+                    g_nm.air_pollution.list.push_back(pollution_item);  
+                }
+            }
+
+            for (const auto &item : g_nm.air_pollution.list) {
+                LOG_W("AQI : %d", item.main.aqi);
+                LOG_W("CO : %.2f", item.components.co);
+                LOG_W("NH3 : %.2f", item.components.nh3);
+                LOG_W("NO : %.2f", item.components.no);
+                LOG_W("NO2 : %.2f", item.components.no2);
+                LOG_W("O3 : %.2f", item.components.o3);
+                LOG_W("SO2 : %.2f", item.components.so2);
+                LOG_W("PM2.5 : %.2f", item.components.pm2_5);
+                LOG_W("PM10 : %.2f", item.components.pm10);
             }
         }
         thread_cnt++;
