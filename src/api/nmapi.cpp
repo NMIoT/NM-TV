@@ -176,7 +176,7 @@ void nmapi_thread_entry(void *args){
 
         /***********************************update crypto rank price data every 60s************************************/
         if(thread_cnt % 60 == 0) {
-            json = api->get_crypto_rank_price(1, 10, "USDT");
+            json = api->get_crypto_rank_price(1, 7, "USDT");
             // LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
                 LOG_E("Failed to get crypto rank price data");

@@ -24,9 +24,15 @@ void button_thread_entry(void *args){
   LOG_I("%s thread started on core %d...", name, xPortGetCoreID());
   // free(name);
 
-  tbtn.attachClick([](){ LOG_I("single click detected");});
+  tbtn.attachClick([](){ 
+    LOG_I("single click detected");
+    ui_switch_next_page_cb();
+  });
   tbtn.attachDoubleClick([](){ LOG_W("double click detected");});
-  tbtn.attachLongPress([](){ LOG_I("long press detected");});
+  tbtn.attachLongPress([](){ 
+    LOG_I("long press detected");
+    force_cfg_cb();
+  });
 
 
   while (true){
