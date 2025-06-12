@@ -562,108 +562,27 @@ static void ui_refresh_thread(void *args){
       //release mutex
       xSemaphoreGive(lvgl_xMutex); 
     }
-
-
-#ifdef TFT_DISPLAY
+    
     if(TFT_BL!=-1){
-      #ifdef HAS_PHOTORESISTOR_FEATURE
-      //更新背光亮度, 亮度随息屏时间递减, 为零时常亮
-      if(g_nm.screen.auto_brightness_adjust){
-        static uint16_t adc_max = 256;
-        int adc = ((g_nm.screen.reg_adc + 9) / 10) * 10;
-        int ladder = adc_max - adc;
-        ladder = ladder > 0 ? (ladder): 0;
-        ladder = ladder > adc_max ? adc_max: ladder;
-
-        LOG_D("ladder : %d/%d, brightness: %f", ladder, adc_max, (float)ladder / (float)adc_max);
-        float brightness = (float)ladder / (float)adc_max;
-        brightness = (brightness > 0.01f) ? brightness : 0.01f;
-        tft_bl_ctrl(brightness);
-      }else{
-        if(g_nm.screen.sleep_timeout > 0){
-            int cycle = (g_nm.screen.sleep_timeout - g_nm.screen.cnt);
-            cycle = cycle > 0 ? cycle : 0;
-            uint8_t full = (uint8_t)(((float)g_nm.screen.brightness/100.0f) * 255);//从设定的这个亮度开始逐渐变暗
-            cycle = cycle * full / g_nm.screen.sleep_timeout;
-            tft_bl_ctrl((float)cycle / 255.0f);
-            g_nm.screen.active = cycle > 0;
-        }else {
-          tft_bl_ctrl((float)(g_nm.screen.brightness/100.0f));
-        }
-      }
-      #else
       if(g_nm.screen.sleep_timeout > 0){
         int cycle = (g_nm.screen.sleep_timeout - g_nm.screen.cnt);
         cycle = cycle > 0 ? cycle : 0;
-        uint8_t full = (uint8_t)(((float)g_nm.screen.brightness/100.0f) * 255);//从设定的这个亮度开始逐渐变暗
+        uint8_t full = (uint8_t)(((float)g_nm.screen.brightness/100.0f) * 255);//
         cycle = cycle * full / g_nm.screen.sleep_timeout;
         tft_bl_ctrl((float)cycle / 255.0f);
         g_nm.screen.active = cycle > 0;
       }else {
         tft_bl_ctrl((float)(g_nm.screen.brightness/100.0f));
       }
-      #endif
     }
-#elif defined(AMOLED_DISPLAY)
-    if(g_nm.screen.sleep_timeout > 0){
-      int cycle = (g_nm.screen.sleep_timeout - g_nm.screen.cnt);
-      cycle = cycle > 0 ? cycle : 0;
-      uint8_t full = (uint8_t)(((float)g_nm.screen.brightness/100.0f) * 255);//从设定的这个亮度开始逐渐变暗
-      cycle = cycle * full / g_nm.screen.sleep_timeout;
-      tft_bl_ctrl((float)cycle / 255.0f);
-      g_nm.screen.active = cycle > 0;
-    }else {
-      tft_bl_ctrl(0.99f);
-    }
-#endif
   }
 }
 
 void ui_switch_next_page_cb(){
-#if defined(HAS_GAUGE_FEATURE)
-  if(g_nm.minerstatus.hashrate.total <= 0) {
-    if(g_nm.need_cfg) {
-      static bool first_time = true;
-      if(first_time) {
-        g_page_index = PAGE_CONFIG;
-        first_time = false;
-      }else {
-        g_page_index = (g_page_index == PAGE_GAUGE) ? PAGE_CONFIG : PAGE_GAUGE;
-      }
-    }else{
-      g_page_index = (g_page_index == PAGE_GAUGE) ? PAGE_LOADING : PAGE_GAUGE;
-    }
-  }
-  else {
-    //在miner页面和gauge页面clokc页面之间切换
-    static bool page_direction = false;
-      if (page_direction == false) {
-        if (g_page_index == PAGE_GAUGE) {
-            g_page_index = PAGE_PRICE;
-        } else if (g_page_index == PAGE_PRICE) {
-            g_page_index = PAGE_CLOCK;
-        } else if (g_page_index == PAGE_CLOCK) {
-            g_page_index = PAGE_PRICE;
-            page_direction = true;
-        }else {
-            g_page_index = PAGE_GAUGE;
-        }
-      } else if (page_direction == true) {
-          if (g_page_index == PAGE_PRICE) {
-              g_page_index = PAGE_GAUGE;
-              page_direction = false;
-          }
-      }
-  }
-#else
   g_page_index = (g_page_index == PAGE_PRICE) ? PAGE_CLOCK : PAGE_PRICE;//在miner页面和clock页面之间切换
-#endif
   uint8_t default_interval = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
-
   g_nm.screen.refresh_interval = (g_page_index == PAGE_CLOCK) ? 1 : default_interval;
-
   ui_switch_to_page(g_page_index, true);
-
   g_nm.screen.last_operaion = millis();
 }
 

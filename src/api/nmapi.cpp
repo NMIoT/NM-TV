@@ -175,7 +175,7 @@ void nmapi_thread_entry(void *args){
         }
 
         /***********************************update crypto rank price data every 60s************************************/
-        if(thread_cnt % 30 == 0) {
+        if(thread_cnt % 60 == 0) {
             json = api->get_crypto_rank_price(1, 10, "USDT");
             // LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
@@ -241,7 +241,7 @@ void nmapi_thread_entry(void *args){
             }
         }
         /************************************update weather realtime data every 10m************************************/
-        if((thread_cnt + 10) % (60*1) == 0) {
+        if((thread_cnt + 10) % (60*10) == 0) {
             // // https://openweathermap.org/img/wn/03d.png
             // // https://openweathermap.org/img/wn/03d@2x.png
             double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
@@ -307,7 +307,7 @@ void nmapi_thread_entry(void *args){
             }
         }
         /************************************update weather forecast data every 15m ***********************************/
-        if((thread_cnt + 20) % (60*1) == 0) {
+        if((thread_cnt + 20) % (60*15) == 0) {
             double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_weather_forecast(lat, lon, 8);
             // LOG_W("%s", json.c_str());
@@ -377,21 +377,12 @@ void nmapi_thread_entry(void *args){
                         forecast_item.wind.speed
                     );
                 }
-
-
-
-
-
-
-
-
-
             } else {
                 LOG_E("No weather forecast data found");
             }
         }
         /************************************update air pollution data every 15m **************************************/
-        if((thread_cnt + 40) % (60*1) == 0){
+        if((thread_cnt + 40) % (60*20) == 0){
             double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_air_pollution(lat, lon);
             // LOG_W("%s", json.c_str());
