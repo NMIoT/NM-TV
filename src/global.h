@@ -94,7 +94,6 @@ typedef struct{
     uint32_t       cnt; // Number of forecast nodes
     String         cod; // Response code
     uint32_t       message; // Response message
-    // forecast_node_t *list; // Array of forecast nodes
     std::list<forecast_node_t> list; // List of forecast nodes
 }weather_forecast_info_t;
 
@@ -136,7 +135,28 @@ typedef struct{
     }wind;
 }weather_realtime_info_t;
 
+/*************************** air pollution ***************************/
+typedef struct{
+    struct{
+        float    co;    //ug/m3
+        float    nh3;   //ug/m3
+        float    no;    //ug/m3
+        float    no2;   //ug/m3
+        float    o3;    //ug/m3
+        float    pm10;  //ug/m3
+        float    pm2_5; //ug/m3
+        float    so2;   //ug/m3
+    }components;
+    struct{
+        int      aqi; // Air Quality Index
+    }main;
+    uint32_t      dt;
+}air_pollution_node_t;
 
+typedef struct{
+    coord_info_t   coord;
+    std::list<air_pollution_node_t> list; // List of forecast nodes
+}air_pollution_info_t;
 
 /*************************** Crypto Price ***************************/
 typedef struct{
@@ -202,6 +222,7 @@ typedef struct{
     std::map<coin_name, ccoin_info> coin_map;
     weather_realtime_info_t weather_realtime;
     weather_forecast_info_t weather_forecast;
+    air_pollution_info_t    air_pollution;
     bool                need_cfg;
     uint8_t             *coin_icon;
     bool                coin_icon_updated;

@@ -2,7 +2,7 @@
 #include "logger.h"
 #include <ArduinoJson.h>
 #include "global.h"
-
+#include "helper.h"
 
 #define NMAPI_HOST "api.nmiot.net" // The host for the NMIoT API
 #define NMAPI_PORT 443             // The port for the NMIoT API, usually 443 for HTTPS
@@ -77,7 +77,28 @@ String NMIoTAPIClass::get_weather_forecast(const double &lat, const double &lon,
     return response;
 }
 
+String NMIoTAPIClass::get_air_pollution(const double &lat, const double &lon){
+    String url = "/v1/weather/air_pollution?lat=" + String(lat, 6) + "&lon=" + String(lon, 6);
+    LOG_D("Requesting: %s", url.c_str());
+    WiFiClientSecure    sslwifi;
+    sslwifi.setInsecure(); // Disable SSL certificate verification for testing purposes
+    HttpClient httpclient(sslwifi, NMAPI_HOST, NMAPI_PORT);
 
+    int httpCode = httpclient.get(url);
+    if (httpCode != 0) {
+        LOG_E("HTTP GET failed, code: %d", httpCode);
+        return "";
+    }
+
+    int status = httpclient.responseStatusCode();
+    if (status != 200) {
+        LOG_E("HTTP response status: %d", status);
+        return "";
+    }
+
+    String response = httpclient.responseBody();
+    return response;
+}
 
  size_t NMIoTAPIClass::download_coin_icon(int coin_id, uint8_t *buf, size_t buf_size){ 
     if (!buf) {
@@ -149,7 +170,7 @@ void nmapi_thread_entry(void *args){
             continue;
         }
 
-        /***********************************update crypto rank price data every 60s*************************************/
+        /***********************************update crypto rank price data every 60s************************************/
         if(thread_cnt % 30 == 0) {
             json = api->get_crypto_rank_price(1, 10, "USDT");
             if(json.isEmpty()) {
@@ -275,8 +296,8 @@ void nmapi_thread_entry(void *args){
                 LOG_E("No weather data found");
             }
         }
-        /************************************update weather forecast data every 15m ************************************/
-        if((thread_cnt + 20) % (60*2) == 0) {
+        /************************************update weather forecast data every 15m ***********************************/
+        if((thread_cnt + 20) % (60*1) == 0) {
             double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_weather_forecast(lat, lon, 8);
             // LOG_W("%s", json.c_str());
@@ -357,6 +378,61 @@ void nmapi_thread_entry(void *args){
 
             } else {
                 LOG_E("No weather forecast data found");
+            }
+        }
+        /************************************update air pollution data every 15m **************************************/
+        if((thread_cnt + 40) % (60*1) == 0){
+            double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
+            json = api->get_air_pollution(lat, lon);
+            LOG_W("%s", json.c_str());
+            if(json.isEmpty()) {
+                LOG_E("Failed to get air pollution data");
+                thread_cnt++;
+                continue;
+            }
+
+            // Deserialize the JSON response
+            doc.clear();
+            error = deserializeJson(doc, json);
+            if (error) {
+                LOG_E("deserializeJson() failed: %s", error.c_str());
+                thread_cnt++;
+                continue;
+            }
+
+            // Extract the air pollution data
+            JsonObject air_pollution = doc.as<JsonObject>();
+            if (!air_pollution.isNull()) {
+                g_nm.air_pollution.coord.lat = air_pollution.containsKey("coord") && air_pollution["coord"].containsKey("lat") ? air_pollution["coord"]["lat"].as<double>() : 0.0;
+                g_nm.air_pollution.coord.lon = air_pollution.containsKey("coord") && air_pollution["coord"].containsKey("lon") ? air_pollution["coord"]["lon"].as<double>() : 0.0;
+                g_nm.air_pollution.list.clear(); // Clear the previous air pollution data
+                JsonArray list = air_pollution.containsKey("list") ? air_pollution["list"].as<JsonArray>() : JsonArray();
+                for (JsonObject item : list) {
+                    air_pollution_node_t pollution_item;
+                    pollution_item.dt = item.containsKey("dt") ? item["dt"].as<uint32_t>() : 0;
+                    pollution_item.main.aqi = item.containsKey("main") && item["main"].containsKey("aqi") ? item["main"]["aqi"].as<int>() : 0;
+                    pollution_item.components.co = item.containsKey("components") && item["components"].containsKey("co") ? item["components"]["co"].as<float>() : 0.0;
+                    pollution_item.components.no = item.containsKey("components") && item["components"].containsKey("no") ? item["components"]["no"].as<float>() : 0.0;
+                    pollution_item.components.no2 = item.containsKey("components") && item["components"].containsKey("no2") ? item["components"]["no2"].as<float>() : 0.0;
+                    pollution_item.components.o3 = item.containsKey("components") && item["components"].containsKey("o3") ? item["components"]["o3"].as<float>() : 0.0;
+                    pollution_item.components.so2 = item.containsKey("components") && item["components"].containsKey("so2") ? item["components"]["so2"].as<float>() : 0.0;
+                    pollution_item.components.pm2_5 = item.containsKey("components") && item["components"].containsKey("pm2_5") ? item["components"]["pm2_5"].as<float>() : 0.0;
+                    pollution_item.components.pm10 = item.containsKey("components") && item["components"].containsKey("pm10") ? item["components"]["pm10"].as<float>() : 0.0;
+                    pollution_item.components.nh3 = item.containsKey("components") && item["components"].containsKey("nh3") ? item["components"]["nh3"].as<float>() : 0.0;
+                    g_nm.air_pollution.list.push_back(pollution_item);  
+                }
+            }
+
+            for (const auto &item : g_nm.air_pollution.list) {
+                LOG_W("AQI : %d", item.main.aqi);
+                LOG_W("CO : %.2f", item.components.co);
+                LOG_W("NH3 : %.2f", item.components.nh3);
+                LOG_W("NO : %.2f", item.components.no);
+                LOG_W("NO2 : %.2f", item.components.no2);
+                LOG_W("O3 : %.2f", item.components.o3);
+                LOG_W("SO2 : %.2f", item.components.so2);
+                LOG_W("PM2.5 : %.2f", item.components.pm2_5);
+                LOG_W("PM10 : %.2f", item.components.pm10);
             }
         }
         thread_cnt++;
