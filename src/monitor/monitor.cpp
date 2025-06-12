@@ -26,11 +26,10 @@ void monitor_thread_entry(void *args){
     uint32_t m_cnt = 0;
 
     ntpClient.begin();
-    ntpClient.setTimeOffset(g_nm.timezone * 3600);
+    ntpClient.setTimeOffset(g_nm.location.tz_offest * 3600.0f); // Set timezone offset in hours
     ntpClient.setUpdateInterval(ntpInterval);
 
     while(true){
-        //WiFi连接状态
         if(WiFi.status() != WL_CONNECTED){
             g_nm.connection.wifi.status_param.status = WL_DISCONNECTED;
             g_nm.connection.wifi.status_param.rssi   = 0;
@@ -48,14 +47,14 @@ void monitor_thread_entry(void *args){
             tv.tv_sec = ntpClient.getEpochTime();
             tv.tv_usec = 0;
             settimeofday(&tv, NULL);
-            // g_nm.minerstatus.utc = tv.tv_sec;
-            // String time_local = convert_time_to_local(g_nm.minerstatus.utc);
-            // LOG_W("ntp calibrate time %s", time_local.c_str());
+            g_nm.location.timestamp = tv.tv_sec;
+            String time_local = convert_time_to_local(g_nm.location.timestamp);
+            LOG_W("ntp calibrate time %s", time_local.c_str());
         }
         else{
             time_t now;
             time(&now);
-            // g_nm.minerstatus.utc = now;
+            g_nm.location.timestamp = now;
         }
 
 
@@ -66,7 +65,7 @@ void monitor_thread_entry(void *args){
             continue;
         }
 
-        // LOG_W("Free memory: %.3fkB" , ESP.getFreeHeap() / 1024.0f);
+        LOG_W("Free memory: %.3fkB, time : %s" , ESP.getFreeHeap() / 1024.0f, convert_time_to_local(g_nm.location.timestamp).c_str());
     }
     LOG_W("%s thread exit", __FUNCTION__);
     delay(1000);

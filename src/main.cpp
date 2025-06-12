@@ -76,13 +76,17 @@ void setup() {
   // fetch timezone from ipapi
   TimezoneFetcher *tz = new TimezoneFetcher();
   if(!tz->fetch()){
-      g_nm.timezone = 0.0; //default timezone
-      g_nm.tz_updated = false;
-      LOG_W("Timezone fetch failed, using default timezone: %.1f", g_nm.timezone); 
+      g_nm.location.tz_offest = 0; //default timezone
+      g_nm.location.tz_updated = false;
+      g_nm.location.coord.lat = 0;
+      g_nm.location.coord.lon = 0;
+      LOG_W("Timezone fetch failed, using default timezone: %.1f", g_nm.location.tz_offest); 
   }else{
-      g_nm.timezone = tz->timezone.toFloat();
-      g_nm.tz_updated = true;
-      LOG_W("Timezone calibrate to : %.1f", g_nm.timezone);
+      g_nm.location.tz_offest = tz->timezone.toFloat();
+      g_nm.location.tz_updated = true;
+      g_nm.location.coord.lat = tz->latitude;
+      g_nm.location.coord.lon = tz->longitude;
+      LOG_W("Timezone calibrate to : %.1f, Latitude: %.6f, Longitude: %.6f", g_nm.location.tz_offest, g_nm.location.coord.lat, g_nm.location.coord.lon);
   }
   delete tz;
   /************************************************************** CREATE MARKET THREAD ***************************************************/

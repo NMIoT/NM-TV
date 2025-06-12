@@ -25,12 +25,12 @@ void button_thread_entry(void *args){
   // free(name);
 
   tbtn.attachClick([](){ 
-    LOG_I("single click detected");
+    LOG_W("single click detected");
     ui_switch_next_page_cb();
   });
   tbtn.attachDoubleClick([](){ LOG_W("double click detected");});
   tbtn.attachLongPress([](){ 
-    LOG_I("long press detected");
+    LOG_W("long press detected");
     force_cfg_cb();
   });
 

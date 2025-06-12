@@ -37,7 +37,7 @@ bool TimezoneFetcher::fetch() {
         return false;
     }
 
-    if (doc.containsKey("utc_offset")) {
+    if (doc.containsKey("utc_offset") && doc.containsKey("latitude") && doc.containsKey("longitude")) {
         String offset = doc["utc_offset"].as<String>(); // "+0800"
         float hours = 0.0f;
         if (offset.length() == 5) {
@@ -46,7 +46,9 @@ bool TimezoneFetcher::fetch() {
             int m = offset.substring(3, 5).toInt();
             hours = sign * (h + m / 60.0f);
         }
-        timezone = String(hours, (hours * 10) == int(hours * 10) ? 1 : 2); 
+        this->timezone = String(hours, (hours * 10) == int(hours * 10) ? 1 : 2); 
+        this->latitude = doc["latitude"].as<float>(); 
+        this->longitude = doc["longitude"].as<float>();
         return true;
     }
     return false;

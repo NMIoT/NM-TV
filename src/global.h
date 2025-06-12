@@ -170,7 +170,7 @@ typedef struct{
     double       percent_change_90d;
     double       volume_24h;
     double       volume_change_24h;
-    String      last_updated;
+    String       last_updated;
 }crypto_price_info_t;
 
 
@@ -222,12 +222,21 @@ typedef struct{
 typedef String             ccoin_name;
 typedef crypto_coin_node_t ccoin_node;
 
+
+
+
+typedef struct{
+    coord_info_t        coord;    // fetch from public IP API
+    uint32_t            tz_offest; // Timezone offset in hours, e.g., +8 for UTC+8
+    bool                tz_updated;
+    uint32_t            timestamp; 
+}location_info_t;
+
 typedef struct{
     board_info_t        board;
     screen_info_t       screen;
     connect_info_t      connection;
-    float               timezone;
-    bool                tz_updated;
+    location_info_t     location;
     std::map<ccoin_name, ccoin_node> coin_price_rank;
     weather_realtime_info_t weather_realtime;
     weather_forecast_info_t weather_forecast;

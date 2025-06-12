@@ -162,8 +162,9 @@ void nmapi_thread_entry(void *args){
 
     uint8_t   fail_count = 0;
     uint32_t  thread_cnt = 0;
+    uint32_t  max_json_size = 0; // Maximum JSON size recorded
     while(true){
-        DynamicJsonDocument doc    = DynamicJsonDocument(1024 * 16);
+        DynamicJsonDocument doc    = DynamicJsonDocument(1024 * 10);
         DeserializationError error = DeserializationError::Ok;
         String json = "";
         delay(1000);
@@ -175,9 +176,10 @@ void nmapi_thread_entry(void *args){
         }
 
         /***********************************update crypto rank price data every 60s************************************/
-        if(thread_cnt % 60 == 0) {
+        if(thread_cnt % 20 == 0) {
             json = api->get_crypto_rank_price(1, 7, "USDT");
-            // LOG_W("%s", json.c_str());
+            max_json_size = max(max_json_size, json.length());
+            // LOG_W("%s , size of json: %d", json.c_str(), json.length());
             if(json.isEmpty()) {
                 LOG_E("Failed to get crypto rank price data");
                 thread_cnt++;
@@ -241,11 +243,12 @@ void nmapi_thread_entry(void *args){
             }
         }
         /************************************update weather realtime data every 10m************************************/
-        if((thread_cnt + 10) % (60*10) == 0) {
+        if((thread_cnt + 10) % (60*1) == 0) {
             // // https://openweathermap.org/img/wn/03d.png
             // // https://openweathermap.org/img/wn/03d@2x.png
-            double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
-            json = api->get_weather_realtime(lat, lon);
+            // double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
+            json = api->get_weather_realtime(g_nm.location.coord.lat, g_nm.location.coord.lon);
+            max_json_size = max(max_json_size, json.length());
             // LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
                 LOG_E("Failed to get weather realtime data");
@@ -307,9 +310,10 @@ void nmapi_thread_entry(void *args){
             }
         }
         /************************************update weather forecast data every 15m ***********************************/
-        if((thread_cnt + 20) % (60*15) == 0) {
-            double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
-            json = api->get_weather_forecast(lat, lon, 8);
+        if((thread_cnt + 20) % (60*1) == 0) {
+            // double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
+            json = api->get_weather_forecast(g_nm.location.coord.lat, g_nm.location.coord.lon, 8);
+            max_json_size = max(max_json_size, json.length());
             // LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
                 LOG_E("Failed to get weather forecast data");
@@ -382,9 +386,10 @@ void nmapi_thread_entry(void *args){
             }
         }
         /************************************update air pollution data every 15m **************************************/
-        if((thread_cnt + 40) % (60*20) == 0){
-            double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
-            json = api->get_air_pollution(lat, lon);
+        if((thread_cnt + 40) % (60*1) == 0){
+            // double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
+            json = api->get_air_pollution(g_nm.location.coord.lat, g_nm.location.coord.lon);
+            max_json_size = max(max_json_size, json.length());
             // LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
                 LOG_E("Failed to get air pollution data");
@@ -437,6 +442,7 @@ void nmapi_thread_entry(void *args){
             }
         }
         thread_cnt++;
+        LOG_D("Thread count: %d, Max JSON size: %d bytes", thread_cnt, max_json_size);
     }
     vTaskDelete(NULL);
 }

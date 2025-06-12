@@ -321,7 +321,7 @@ bool load_g_nm(void){
         g_nm.screen.active                   = true;
         g_nm.connection.client_connected     = false;
 
-        g_nm.timezone                        = 0.0f;
+        g_nm.location.tz_offest              = 0;
         
         g_nm.need_cfg                        = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, false);
 

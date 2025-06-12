@@ -12,6 +12,8 @@ private:
     HttpClient* _httpClient;
 public:
     String timezone;
+    float  latitude;
+    float  longitude;
 
     TimezoneFetcher();
     ~TimezoneFetcher();

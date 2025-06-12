@@ -2,6 +2,8 @@
 #define _HELPER_H
 #include <Arduino.h>
 #include "storage.h"
+#include <vector>
+#include <algorithm>
 
 #define IN
 #define OUT

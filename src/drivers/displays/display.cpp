@@ -8,6 +8,7 @@
 #include "scrsaver.h"
 #include <TFT_eSPI.h>
 #include "helper.h"
+
 #define SCREEN_WIDTH  TFT_WIDTH
 #define SCREEN_HEIGHT TFT_HEIGHT
 static TFT_eSPI     tft     = TFT_eSPI();
@@ -15,7 +16,8 @@ static TFT_eSPI     tft     = TFT_eSPI();
 enum{
   PAGE_LOADING = 0,
   PAGE_CONFIG,
-  PAGE_PRICE,
+  PAGE_PRICE_RANK,
+  PAGE_PRICE_DETAIL,
   PAGE_CLOCK,
   PAGE_WEATHER,
   PAGE_END
@@ -28,27 +30,28 @@ static SemaphoreHandle_t    lvgl_xMutex;
 static lv_obj_t *parent_docker = NULL;
 static lv_obj_t *g_pages[] = {NULL, NULL, NULL, NULL, NULL, NULL};
 static lv_obj_t *loading_page = NULL, *config_page = NULL, *price_page = NULL, *weather_page = NULL, *clock_page = NULL;
-static uint16_t g_page_index = PAGE_PRICE;
+static uint16_t g_page_index = PAGE_PRICE_RANK;
 
 #include "image_240_240.h"
-LV_FONT_DECLARE(ds_digib_font_10)
-LV_FONT_DECLARE(ds_digib_font_12)
-LV_FONT_DECLARE(ds_digib_font_14)
-LV_FONT_DECLARE(ds_digib_font_16)
-LV_FONT_DECLARE(ds_digib_font_18)
-LV_FONT_DECLARE(ds_digib_font_22)
-LV_FONT_DECLARE(ds_digib_font_24)
-LV_FONT_DECLARE(ds_digib_font_28)
-LV_FONT_DECLARE(ds_digib_font_34)
-LV_FONT_DECLARE(ds_digib_font_36)
-LV_FONT_DECLARE(ds_digib_font_50)
-LV_FONT_DECLARE(ds_digib_font_54)
-LV_FONT_DECLARE(ds_digib_font_58)
-LV_FONT_DECLARE(symbol_10)
-LV_FONT_DECLARE(symbol_14)
-LV_FONT_DECLARE(symbol_18)
-LV_FONT_DECLARE(symbol_20)
-// static const lv_font_t *lb_loading_progress_font  = &lv_font_montserrat_14;
+// LV_FONT_DECLARE(ds_digib_font_10)
+// LV_FONT_DECLARE(ds_digib_font_12)
+// LV_FONT_DECLARE(ds_digib_font_14)
+// LV_FONT_DECLARE(ds_digib_font_16)
+// LV_FONT_DECLARE(ds_digib_font_18)
+// LV_FONT_DECLARE(ds_digib_font_22)
+// LV_FONT_DECLARE(ds_digib_font_24)
+// LV_FONT_DECLARE(ds_digib_font_28)
+// LV_FONT_DECLARE(ds_digib_font_34)
+// LV_FONT_DECLARE(ds_digib_font_36)
+// LV_FONT_DECLARE(ds_digib_font_50)
+// LV_FONT_DECLARE(ds_digib_font_54)
+// LV_FONT_DECLARE(ds_digib_font_58)
+// LV_FONT_DECLARE(symbol_10)
+// LV_FONT_DECLARE(symbol_14)
+// LV_FONT_DECLARE(symbol_18)
+// LV_FONT_DECLARE(symbol_20)
+
+static const lv_font_t *lb_price_rank_font = &lv_font_montserrat_34;
 // static const lv_font_t *lb_loading_slogan_font    = &lv_font_montserrat_18;
 // static const lv_font_t *lb_loading_version_check_font = &lv_font_montserrat_14;
 // static const lv_font_t *lb_cfg_timeout_font  = &lv_font_montserrat_18;
@@ -60,7 +63,7 @@ LV_FONT_DECLARE(symbol_20)
 // static const lv_font_t *lb_temp_or_time_font     = &ds_digib_font_14;
 // static const lv_font_t *lb_wifi_ip_font  = &ds_digib_font_18;
 // static const lv_font_t *lb_wifi_rssi_font = &ds_digib_font_18;
-// static const lv_font_t *lb_mpage_price_font     = &ds_digib_font_16;
+// static const lv_font_t *lb_mPAGE_PRICE_RANK_font     = &ds_digib_font_16;
 // static const lv_font_t *lb_uptime_font       = &ds_digib_font_18;
 // static const lv_font_t *lb_uptime_unit_font  = &lv_font_montserrat_16;
 // static const lv_font_t *lb_wifi_rssi_symbol_font = &lv_font_montserrat_14;
@@ -300,7 +303,7 @@ static void lvgl_tick_task(void *args){
   uint32_t last_tick = millis();
   while(true){
     delay(tick_interval/2);
-    if(!g_nm.screen.active)continue;//息屏后不刷新
+    if(!g_nm.screen.active)continue;
     if (xSemaphoreTake(lvgl_xMutex, tick_interval/2) == pdTRUE){
       lv_tick_inc(millis() - last_tick);
       lv_timer_handler(); /* let the GUI do its work */
@@ -312,7 +315,7 @@ static void lvgl_tick_task(void *args){
 
 static void ui_init(void){
   LOG_I("lvgl version: %s", (String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch()).c_str());
-  const uint32_t color_buf_size = SCREEN_WIDTH * SCREEN_HEIGHT / 20;
+  const uint32_t color_buf_size = SCREEN_WIDTH * SCREEN_HEIGHT / 5;
   lvgl_color_buf = (lv_color_t*)malloc(color_buf_size * sizeof(lv_color_t));
 
   if(lvgl_color_buf == NULL){
@@ -393,7 +396,7 @@ static void ui_layout_init(void){
   // Create g_pages array
   g_pages[PAGE_LOADING] = loading_page;
   g_pages[PAGE_CONFIG]  = config_page;
-  g_pages[PAGE_PRICE]   = price_page;
+  g_pages[PAGE_PRICE_RANK]   = price_page;
   g_pages[PAGE_WEATHER] = weather_page; 
   g_pages[PAGE_CLOCK]   = clock_page; 
   ////////////////////////////////////// loading page layout ///////////////////////////////////////////////
@@ -411,49 +414,115 @@ static void ui_saver_page_init(){
 }
 
 
-static void ui_price_page_refresh(std::map<ccoin_name, ccoin_node> &map){
+static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
   // https://s2.coinmarketcap.com/static/img/coins/32x32/1.png
   if(map.empty()) return;
-  if(g_pages[PAGE_PRICE] == NULL) return;
-  static lv_img_dsc_t coin_icon_img_dsc[7];
-  static lv_obj_t* icon_png_list[7] = {NULL,};
-  static lv_obj_t* lb_crypto_coin_price[7] = {NULL,};
+  if(g_pages[PAGE_PRICE_RANK] == NULL) return;
+
+  static const uint8_t rank_max = 7; // Maximum number of coins to display
+  static lv_img_dsc_t coin_icon_img_dsc[rank_max];
+  static lv_obj_t* icon_png_list[rank_max] = {NULL,};
+  static lv_obj_t* lb_crypto_coin_price[rank_max] = {NULL,};
+
+  // Initialize the icon image descriptors and labels if not already done
+  for(uint8_t i = 0; i < rank_max; i++) {
+      //create or update the icon image
+      if(icon_png_list[i] == NULL) {
+          icon_png_list[i] = lv_img_create(g_pages[PAGE_PRICE_RANK]);
+          lv_obj_align(icon_png_list[i], LV_ALIGN_TOP_LEFT, 0, i * 33 + 2);
+      }
+      if(lb_crypto_coin_price[i] == NULL) {
+          lb_crypto_coin_price[i] = lv_label_create(g_pages[PAGE_PRICE_RANK]);
+          lv_color_t font_color = lv_color_hex(0xFFFFFF);
+          lv_obj_set_width(lb_crypto_coin_price[i], SCREEN_WIDTH);
+          lv_label_set_text(lb_crypto_coin_price[i], "");
+          lv_obj_set_style_text_color(lb_crypto_coin_price[i], font_color, LV_PART_MAIN); 
+          lv_obj_set_style_text_font(lb_crypto_coin_price[i], lb_price_rank_font, 0);
+          lv_obj_align(lb_crypto_coin_price[i], LV_ALIGN_TOP_LEFT, 40, i * 33);
+      }
+  }
+
+  // Sort the map by price in descending order
+  std::vector<std::pair<ccoin_name, ccoin_node>> sorted_vec(map.begin(), map.end());
+  std::sort(sorted_vec.begin(), sorted_vec.end(),
+      [](const std::pair<ccoin_name, ccoin_node>& a, const std::pair<ccoin_name, ccoin_node>& b) {
+          return a.second.price.realtime > b.second.price.realtime; 
+      }
+  );
 
   uint8_t index = 0;
-  for(auto it = map.begin(); it != map.end(); ++it) {
-      ccoin_node &coin = it->second;
-      if(coin.icon.addr == NULL || coin.icon.size == 0) continue; //skip if icon data is not available
+  for(const auto& coin : sorted_vec) {
+      // item.first 是 ccoin_name，item.second 是 ccoin_node
+      if(coin.second.icon.addr == NULL || coin.second.icon.size == 0) continue; //skip if icon data is not available
 
-      //create or update the icon image
-      if(icon_png_list[index] == NULL && coin.icon.addr != NULL) {
-          icon_png_list[index] = lv_img_create(g_pages[PAGE_PRICE]);
+      //update coin icon image descriptor
+      coin_icon_img_dsc[index].header.cf = LV_IMG_CF_RAW_ALPHA;
+      coin_icon_img_dsc[index].header.w = 0; //auto width
+      coin_icon_img_dsc[index].header.h = 0; //auto height
+      coin_icon_img_dsc[index].header.always_zero = 0;
+      coin_icon_img_dsc[index].header.reserved = 0;
+      coin_icon_img_dsc[index].data_size = coin.second.icon.size;
+      coin_icon_img_dsc[index].data      = (const uint8_t *)(coin.second.icon.addr);
+      lv_img_set_src(icon_png_list[index], &coin_icon_img_dsc[index]);
 
-          //update coin icon image descriptor
-          coin_icon_img_dsc[index].header.cf = LV_IMG_CF_RAW_ALPHA;
-          coin_icon_img_dsc[index].header.w = 0; //auto width
-          coin_icon_img_dsc[index].header.h = 0; //auto height
-          coin_icon_img_dsc[index].header.always_zero = 0;
-          coin_icon_img_dsc[index].header.reserved = 0;
-          coin_icon_img_dsc[index].data_size = coin.icon.size;
-          coin_icon_img_dsc[index].data      = (const uint8_t *)coin.icon.addr;
-          lv_img_set_src(icon_png_list[index], &coin_icon_img_dsc[index]);
-          lv_obj_align(icon_png_list[index], LV_ALIGN_TOP_LEFT, 0, index * 33 + 2);
-      }
-      if(lb_crypto_coin_price[index] == NULL) {
-          lb_crypto_coin_price[index] = lv_label_create(g_pages[PAGE_PRICE]);
-          lv_color_t font_color = lv_color_hex(0xFFFFFF);
-          lv_obj_set_width(lb_crypto_coin_price[index], SCREEN_WIDTH);
-          lv_obj_set_style_text_color(lb_crypto_coin_price[index], font_color, LV_PART_MAIN); 
-          lv_obj_set_style_text_font(lb_crypto_coin_price[index], &lv_font_montserrat_34, 0);
-          lv_obj_align(lb_crypto_coin_price[index], LV_ALIGN_TOP_LEFT, 33, index * 33);
-      }
-
-      String price_str = "$" + String(coin.price.realtime);
-      lv_coord_t width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), &lv_font_montserrat_34, 0, LV_TEXT_FLAG_NONE);
+      //update coin price label
+      String price_str = "$" + String(coin.second.price.realtime, 1);
+      lv_coord_t width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), lb_price_rank_font, 0, LV_TEXT_FLAG_NONE);
       lv_obj_set_width(lb_crypto_coin_price[index], width);
       lv_label_set_text_fmt(lb_crypto_coin_price[index], "%s", price_str);
       index++;
   }
+
+
+  // for(auto it = map.begin(); it != map.end(); ++it) {
+  //     ccoin_node &coin = it->second;
+  //     if(coin.icon.addr == NULL || coin.icon.size == 0) continue; //skip if icon data is not available
+
+  //     //create or update the icon image
+  //     if(icon_png_list[index] == NULL && coin.icon.addr != NULL) {
+  //         icon_png_list[index] = lv_img_create(g_pages[PAGE_PRICE_RANK]);
+
+  //         //update coin icon image descriptor
+  //         coin_icon_img_dsc[index].header.cf = LV_IMG_CF_RAW_ALPHA;
+  //         coin_icon_img_dsc[index].header.w = 0; //auto width
+  //         coin_icon_img_dsc[index].header.h = 0; //auto height
+  //         coin_icon_img_dsc[index].header.always_zero = 0;
+  //         coin_icon_img_dsc[index].header.reserved = 0;
+  //         coin_icon_img_dsc[index].data_size = coin.icon.size;
+  //         coin_icon_img_dsc[index].data      = (const uint8_t *)coin.icon.addr;
+  //     }
+  //     if(lb_crypto_coin_price[index] == NULL) {
+  //         lb_crypto_coin_price[index] = lv_label_create(g_pages[PAGE_PRICE_RANK]);
+  //         lv_color_t font_color = lv_color_hex(0xFFFFFF);
+  //         lv_obj_set_width(lb_crypto_coin_price[index], SCREEN_WIDTH);
+  //         lv_obj_set_style_text_color(lb_crypto_coin_price[index], font_color, LV_PART_MAIN); 
+  //         lv_obj_set_style_text_font(lb_crypto_coin_price[index], &lv_font_montserrat_34, 0);
+  //         lv_obj_align(lb_crypto_coin_price[index], LV_ALIGN_TOP_LEFT, 40, index * 33);
+  //     }
+
+  //     String price_str = "$" + String(coin.price.realtime, 1);
+  //     lv_coord_t width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), &lv_font_montserrat_34, 0, LV_TEXT_FLAG_NONE);
+  //     lv_obj_set_width(lb_crypto_coin_price[index], width);
+  //     lv_label_set_text_fmt(lb_crypto_coin_price[index], "%s", price_str);
+  //     index++;
+  // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 static void ui_clock_page_refresh(){
@@ -542,16 +611,16 @@ static void ui_refresh_thread(void *args){
     delay(refresh);
 
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
-      if(g_page_index == PAGE_PRICE) {
+      if(g_page_index == PAGE_PRICE_RANK) {
           // static auto it = g_nm.coin_price_rank.begin();
           // if(!g_nm.coin_price_rank.empty()) {
-          //     ui_price_page_refresh(it->second);
+          //     ui_price_page_rank_refresh(it->second);
           //     it++;
           //     it = (it == g_nm.coin_price_rank.end()) ? g_nm.coin_price_rank.begin() : it;
           // }
 
 
-          ui_price_page_refresh(g_nm.coin_price_rank);
+          ui_price_page_rank_refresh(g_nm.coin_price_rank);
       }
       else if(g_page_index == PAGE_CLOCK) ui_clock_page_refresh();
       //release mutex
@@ -574,7 +643,7 @@ static void ui_refresh_thread(void *args){
 }
 
 void ui_switch_next_page_cb(){
-  g_page_index = (g_page_index == PAGE_PRICE) ? PAGE_CLOCK : PAGE_PRICE;//在miner页面和clock页面之间切换
+  g_page_index = (g_page_index == PAGE_PRICE_RANK) ? PAGE_CLOCK : PAGE_PRICE_RANK;//在miner页面和clock页面之间切换
   uint8_t default_interval = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
   g_nm.screen.refresh_interval = (g_page_index == PAGE_CLOCK) ? 1 : default_interval;
   ui_switch_to_page(g_page_index, true);
@@ -622,7 +691,7 @@ void display_thread(void *args){
   ui_switch_to_page(PAGE_LOADING, true);
 
   /***************************************switch to miner page*************************************/
-  ui_switch_to_page(PAGE_PRICE, true);
+  ui_switch_to_page(PAGE_PRICE_RANK, true);
   g_nm.screen.last_operaion = millis();
   vTaskDelete(NULL);
 }
