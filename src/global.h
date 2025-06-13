@@ -7,7 +7,7 @@
 #include <map>
 #include <list>
 
-#define CURRENT_VERSION     "v0.0.01"
+#define CURRENT_VERSION     "v0.0.02"
 #define MINER_WTDG_TIMEOUT  (1000*60*15) //15分钟看门狗
 #define SAVE_INTERVAL       (60*60) //每60分钟保存一次状态到NVS
 #define WIFI_RSSI_STRONG    (-60)
@@ -23,8 +23,7 @@
 
 enum{
     // lowest priority
-    TASK_PRIORITY_BTN = 1, 
-    TASK_PRIORITY_MONITOR, 
+    TASK_PRIORITY_MONITOR = 1, 
     TASK_PRIORITY_API,
     TASK_PRIORITY_CONNECT, 
     TASK_PRIORITY_LED, 
@@ -32,6 +31,7 @@ enum{
     TASK_PRIORITY_DISPLAY, 
     TASK_PRIORITY_UI_REFRESH,
     TASK_PRIORITY_LVGL_DRV, 
+    TASK_PRIORITY_BTN, 
     //highest priority
 };
 

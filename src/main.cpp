@@ -11,7 +11,7 @@
 #include "helper.h"
 
 static String  taskName = "";
-TaskHandle_t   task_btn = NULL, task_nmapi = NULL, task_monitor = NULL, task_lvgl_tick = NULL, task_ui_refresh = NULL;
+TaskHandle_t   task_btn = NULL, task_nmapi = NULL, task_monitor = NULL, task_ui = NULL, task_lvgl_tick = NULL, task_ui_refresh = NULL;
 nm_sal_t       g_nm;
 
 void setup() {
@@ -38,8 +38,8 @@ void setup() {
   delay(50);
   /*********************************************************** INIT DISPLAY ***************************************************************/
   taskName = "(ui)";
-  xTaskCreatePinnedToCore(display_thread, taskName.c_str(), 1024*15, (void*)taskName.c_str(), TASK_PRIORITY_DISPLAY, NULL, UiTaskCore);
-  delay(10);
+  xTaskCreatePinnedToCore(display_thread, taskName.c_str(), 1024*5, (void*)taskName.c_str(), TASK_PRIORITY_DISPLAY, &task_ui, UiTaskCore);
+  delay(50);
   /*********************************************************** FORCE CONFIG **************************************************************/
   if(g_nm.need_cfg){
     xSemaphoreGive(g_nm.connection.wifi.force_cfg_xsem);
@@ -122,9 +122,9 @@ void loop() {
           taskName = pcTaskGetName(task_ui_refresh);
           LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
       }
-      if(task_api != NULL) {
-          highWaterMark = uxTaskGetStackHighWaterMark(task_api);
-          taskName = pcTaskGetName(task_api);
+      if(task_nmapi != NULL) {
+          highWaterMark = uxTaskGetStackHighWaterMark(task_nmapi);
+          taskName = pcTaskGetName(task_nmapi);
           LOG_I("%s Stack High Water Mark: %u", taskName, highWaterMark);
       }
       if(task_monitor != NULL) {

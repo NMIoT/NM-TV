@@ -661,7 +661,7 @@ static void ui_refresh_thread(void *args){
   free(name);
 
   while (true){
-    delay(1000);
+    delay(100);
 
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
       // circle menu page scroll
@@ -696,14 +696,15 @@ static void ui_refresh_thread(void *args){
       }
       if(xSemaphoreTake(ui_state.ok_cancel_xsem, 0) == pdTRUE){
         if(ui_state.current_screen_type == MENU_SCREEN){
-
-        }else if(ui_state.current_screen_type == SUB_MENU_SCREEN){
-
+          // lv_obj_scroll_to_view(sub_menu_pages[ui_state.sub_menu_page_index], LV_ANIM_ON);
+          ui_state.current_screen_type = SUB_MENU_SCREEN;
+          LOG_W("Enter sub menu page %d", ui_state.sub_menu_page_index);
         }
-
-
-
-
+        else if(ui_state.current_screen_type == SUB_MENU_SCREEN){
+          // lv_obj_scroll_to_view(menu_pages[ui_state.menu_page_index], LV_ANIM_ON);
+          ui_state.current_screen_type = MENU_SCREEN;
+          LOG_W("Exit sub menu page %d", ui_state.sub_menu_page_index);
+        }
       } 
 
 
@@ -773,7 +774,7 @@ void display_thread(void *args){
   delay(500);//wait a bit for lvgl tick task to start, necessary for lvgl to work properly
 
   taskName = "(uirefresh)";
-  xTaskCreatePinnedToCore(ui_refresh_thread, taskName.c_str(), 1024*2.5, (void*)taskName.c_str(), TASK_PRIORITY_UI_REFRESH, &task_ui_refresh, UiRefreshTaskCore);
+  xTaskCreatePinnedToCore(ui_refresh_thread, taskName.c_str(), 1024*5, (void*)taskName.c_str(), TASK_PRIORITY_UI_REFRESH, &task_ui_refresh, UiRefreshTaskCore);
   delay(100);
 
 
