@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include "global.h"
 #include "helper.h"
+// #include "city_map.h"
 
 #define NMAPI_HOST "api.nmiot.net" // The host for the NMIoT API
 #define NMAPI_PORT 443             // The port for the NMIoT API, usually 443 for HTTPS
@@ -159,6 +160,15 @@ void nmapi_thread_entry(void *args){
         vTaskDelete(NULL);
         return;
     }
+
+    // auto it = city_map.find("Chengdu,CN");
+    // if(it != city_map.end()) {
+    //     float lat = it->second.lat;
+    //     float lon = it->second.lon;
+    //     LOG_I("Found city: %s, lat: %.6f, lon: %.6f", it->first.c_str(), lat, lon);
+    // }
+
+
 
     uint8_t   fail_count = 0;
     uint32_t  thread_cnt = 0;

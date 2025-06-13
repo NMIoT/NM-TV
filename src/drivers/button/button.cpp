@@ -28,10 +28,13 @@ void button_thread_entry(void *args){
     LOG_W("single click detected");
     ui_switch_next_page_cb();
   });
-  tbtn.attachDoubleClick([](){ LOG_W("double click detected");});
+  tbtn.attachDoubleClick([](){ 
+    LOG_W("double click detected");
+    ui_switch_previous_page_cb();
+  });
   tbtn.attachLongPress([](){ 
     LOG_W("long press detected");
-    force_cfg_cb();
+    // force_cfg_cb();
   });
 
 

@@ -14,184 +14,48 @@
 static TFT_eSPI     tft     = TFT_eSPI();
 
 enum{
-  PAGE_LOADING = 0,
-  PAGE_CONFIG,
-  PAGE_PRICE_RANK,
-  PAGE_PRICE_DETAIL,
-  PAGE_CLOCK,
-  PAGE_WEATHER,
-  PAGE_END
+  MENU_PAGE_LOADING = 0,
+  MENU_PAGE_PRICE,
+  MENU_PAGE_WEATHER,
+  MENU_PAGE_CLOCK,
+  MENU_PAGE_IDEA,
+  MENU_PAGE_ALBUM,
+  MENU_PAGE_SETTINGS,
+  MENU_PAGE_END
 };
+
+enum{
+  SUB_MENU_PAGE_0 = 0,
+  SUB_MENU_PAGE_1,
+  SUB_MENU_PAGE_2,
+  SUB_MENU_PAGE_3,
+  SUB_MENU_PAGE_4,
+  SUB_MENU_PAGE_5,
+  SUB_MENU_PAGE_6,
+  SUB_MENU_PAGE_END
+};
+
+
 
 /*********************************************************************全局lvgl对象********************************************************************/
 static lv_color_t          *lvgl_color_buf = NULL;
 static lv_disp_draw_buf_t   draw_buf;
 static SemaphoreHandle_t    lvgl_xMutex;
 static lv_obj_t *parent_docker = NULL;
-static lv_obj_t *g_pages[] = {NULL, NULL, NULL, NULL, NULL, NULL};
-static lv_obj_t *loading_page = NULL, *config_page = NULL, *price_page = NULL, *weather_page = NULL, *clock_page = NULL;
-static uint16_t g_page_index = PAGE_PRICE_RANK;
+static lv_obj_t *g_pages[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+static lv_obj_t *loading_menu_page = NULL, 
+                 *price_menu_page = NULL, 
+                 *weather_menu_page = NULL, 
+                 *clock_menu_page = NULL, 
+                 *idea_menu_page = NULL, 
+                 *album_menu_page = NULL, 
+                 *settings_menu_page = NULL;
+static uint16_t g_page_index = MENU_PAGE_PRICE;
 
 #include "image_240_240.h"
 // LV_FONT_DECLARE(ds_digib_font_10)
-// LV_FONT_DECLARE(ds_digib_font_12)
-// LV_FONT_DECLARE(ds_digib_font_14)
-// LV_FONT_DECLARE(ds_digib_font_16)
-// LV_FONT_DECLARE(ds_digib_font_18)
-// LV_FONT_DECLARE(ds_digib_font_22)
-// LV_FONT_DECLARE(ds_digib_font_24)
-// LV_FONT_DECLARE(ds_digib_font_28)
-// LV_FONT_DECLARE(ds_digib_font_34)
-// LV_FONT_DECLARE(ds_digib_font_36)
-// LV_FONT_DECLARE(ds_digib_font_50)
-// LV_FONT_DECLARE(ds_digib_font_54)
-// LV_FONT_DECLARE(ds_digib_font_58)
 // LV_FONT_DECLARE(symbol_10)
-// LV_FONT_DECLARE(symbol_14)
-// LV_FONT_DECLARE(symbol_18)
-// LV_FONT_DECLARE(symbol_20)
-
 static const lv_font_t *lb_price_rank_font = &lv_font_montserrat_34;
-// static const lv_font_t *lb_loading_slogan_font    = &lv_font_montserrat_18;
-// static const lv_font_t *lb_loading_version_check_font = &lv_font_montserrat_14;
-// static const lv_font_t *lb_cfg_timeout_font  = &lv_font_montserrat_18;
-// static const lv_font_t *lb_version_loading_font  = &lv_font_montserrat_18;
-// static const lv_font_t *lb_cfg_version_font  = &lv_font_montserrat_18;
-// static const lv_font_t *lb_loading_font  = &lv_font_montserrat_18;
-// static const lv_font_t *lb_hashrate_font = &ds_digib_font_36;
-// static const lv_font_t *lb_blk_hit_font  = &ds_digib_font_58;
-// static const lv_font_t *lb_temp_or_time_font     = &ds_digib_font_14;
-// static const lv_font_t *lb_wifi_ip_font  = &ds_digib_font_18;
-// static const lv_font_t *lb_wifi_rssi_font = &ds_digib_font_18;
-// static const lv_font_t *lb_mPAGE_PRICE_RANK_font     = &ds_digib_font_16;
-// static const lv_font_t *lb_uptime_font       = &ds_digib_font_18;
-// static const lv_font_t *lb_uptime_unit_font  = &lv_font_montserrat_16;
-// static const lv_font_t *lb_wifi_rssi_symbol_font = &lv_font_montserrat_14;
-// static const lv_font_t *lb_price_symbol_font     = &symbol_14;
-
-// static const lv_font_t *lb_job_received_font = &ds_digib_font_22;
-// static const lv_font_t *lb_net_diff_font     = &ds_digib_font_22;
-// static const lv_font_t *lb_local_diff_font   = &ds_digib_font_22;
-// static const lv_font_t *lb_shares_font       = &ds_digib_font_22;
-
-// static const lv_font_t *lb_clock_pool_font       = &lv_font_montserrat_18;
-// static const lv_font_t *lb_clock_price_font      = &ds_digib_font_36;
-// static const lv_font_t *lb_miner_version_font    = &ds_digib_font_16;
-
-// static const lv_font_t *lb_job_receive_symbol_font        = &symbol_18;
-// static const lv_font_t *lb_net_diff_symbol_font           = &symbol_18;
-// static const lv_font_t *lb_local_diff_symbol_font         = &symbol_18;
-// static const lv_font_t *lb_share_symb_font                = &symbol_18;
-
-// static const lv_font_t *lb_clock_hr_font                  = &ds_digib_font_36;
-// static const lv_font_t *lb_clock_hr_unit_font             = &lv_font_montserrat_14;
-// static const lv_font_t *lb_clock_version_font             = &ds_digib_font_12;
-// static const lv_font_t *lb_clock_day_font                 = &ds_digib_font_24;
-// static const lv_font_t *lb_clock_hms_font                 = &ds_digib_font_54;
-// static const lv_font_t *lb_clock_price_changed_font       = &ds_digib_font_12;
-
-// static const lv_font_t *lb_swarm_total_hr_font            = &ds_digib_font_22;
-// static const lv_font_t *lb_swarm_best_diff_font           = &ds_digib_font_22;
-// static const lv_font_t *lb_swarm_workers_font             = &ds_digib_font_22;
-
-
-// static const lv_coord_t lb_version_loading_coord[2] = {(lv_coord_t)(SCREEN_WIDTH - (int16_t)(String(CURRENT_VERSION).length() * 8)), 2};
-// static const lv_coord_t lb_version_config_coord[2] = {(lv_coord_t)(SCREEN_WIDTH - (int16_t)(String(CURRENT_VERSION).length() * 12)), 10};  
-// static const lv_coord_t lb_timeout_config_coord[2] = {(lv_coord_t)(SCREEN_WIDTH - (int16_t)(String(CURRENT_VERSION).length() * 11)), SCREEN_HEIGHT - 35};  
-// static const lv_coord_t lb_mine_page_ver_coord[2]  = {10, 128};
-// static const lv_coord_t lb_slogan_loading_coord[2] = {0, 10};  
-// static const lv_coord_t lb_version_check_loading_coord[2] = {0, 40};
-// static const lv_coord_t lb_flash_addr_loading_coord[2] = {0, 70};
-// static const lv_coord_t lb_hashrate_coord[2] = {125, 160};
-// static const lv_coord_t lb_blk_hit_coord[2] = {11, 65};
-// static const lv_coord_t lb_temp_or_time_coord[2] = {2, 5};
-// static const lv_coord_t lb_uptime_day_coord[2] = {58, 5};
-// static const lv_coord_t lb_wifi_ip_coord[2] = {13, 175};
-// static const lv_coord_t lb_wifi_rssi_coord[2] = {185, 5};
-
-// static const lv_coord_t lb_price_coord[2] = {40, 145};
-// static const lv_coord_t lb_price_symbol_coord[2] = {20, 145};
-
-// static const lv_coord_t lb_uptime_day_unit_coord[2] = {86, 5};
-// static const lv_coord_t lb_uptime_hms_coord[2] = {96, 5};
-// static const lv_coord_t lb_wifi_rssi_symbol_coord[2] = {165, 5};
-
-
-
-
-// static const lv_coord_t lb_job_received_coord[2] = {112 + 28, 15 + 14};
-// static const lv_coord_t lb_net_diff_coord[2]     = {112 + 28, 2*15 + 14*2 + 1};
-// static const lv_coord_t lb_local_diff_coord[2]   = {112 + 28, 3*15 + 14*3};
-// static const lv_coord_t lb_shares_coord[2]       = {112 + 28, 4*15 + 14*4 - 1};
-
-// static const lv_coord_t lb_job_receive_symbol_coord[2]  = {112, 15 +15};
-// static const lv_coord_t lb_net_diff_symbol_coord[2]     = {112, 2*15 +15*2 + 1};
-// static const lv_coord_t lb_local_diff_symbol_coord[2]   = {112, 3*15 +15*3};
-// static const lv_coord_t lb_share_symb_coord[2]          = {112 - 3, 4*15 + 15*4 - 3};
-
-// static const lv_coord_t lb_clock_coord[2] = {0, 5};
-// static const lv_coord_t lb_clock_hr_coord[2] = {95 + 45 , 2};
-// static const lv_coord_t lb_clock_hr_unit_coord[2] = {0, 18};
-// static const lv_coord_t lb_clock_version_coord[2] = {8, 5};
-
-// static const lv_coord_t lb_clock_day_coord[2] = {0, 0};
-// static const lv_coord_t lb_clock_hms_coord[2] = {0, 0};
-// static const lv_coord_t lb_clock_price_coord[2] = {2, 2};
-// static const lv_coord_t lb_clock_pool_coord[2] = {1, -6};
-// static const lv_coord_t lb_clock_price_changed_coord[2] = {1, 25};
-
-// static const lv_coord_t lb_swarm_best_diff_coord[2] = {2, 215};
-// static const lv_coord_t lb_swarm_workers_coord[2]   = {106, 215};
-// static const lv_coord_t lb_swarm_total_hr_coord[2]  = {170, 215};
-
-
-const lv_img_dsc_t loading_img = {
-    .header = {
-        .cf = LV_IMG_CF_TRUE_COLOR,
-        .always_zero = 0,
-        .reserved = 0,
-        .w = SCREEN_WIDTH,  
-        .h = SCREEN_HEIGHT,  
-    },
-    .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)global_img_array, 
-};
-
-const lv_img_dsc_t config_img = {
-    .header = {
-        .cf = LV_IMG_CF_TRUE_COLOR,
-        .always_zero = 0,
-        .reserved = 0,
-        .w = SCREEN_WIDTH,  
-        .h = SCREEN_HEIGHT,  
-    },
-    .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)global_img_array, 
-};
-
-const lv_img_dsc_t miner_img = {
-    .header = {
-        .cf = LV_IMG_CF_TRUE_COLOR,
-        .always_zero = 0,
-        .reserved = 0,
-        .w = SCREEN_WIDTH,  
-        .h = SCREEN_HEIGHT,  
-    },
-    .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)global_img_array, 
-};
-
-const lv_img_dsc_t clock_img = {
-    .header = {
-        .cf = LV_IMG_CF_TRUE_COLOR,
-        .always_zero = 0,
-        .reserved = 0,
-        .w = SCREEN_WIDTH,  
-        .h = SCREEN_HEIGHT,  
-    },
-    .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-    .data = (const uint8_t *)global_img_array, 
-};
 
 static int blpwmChannel = 0;  
 static void tft_bl_ctrl(float brightness) {
@@ -303,9 +167,10 @@ static void ui_init(void){
 }
 
 static void ui_layout_init(void){
+  lv_obj_t *background_img_obj = NULL;
   //create parent object
   parent_docker = lv_obj_create(lv_scr_act());
-  lv_obj_set_size(parent_docker, SCREEN_WIDTH * 2, SCREEN_HEIGHT * 3); 
+  lv_obj_set_size(parent_docker, SCREEN_WIDTH * 7, SCREEN_HEIGHT * 2); 
   lv_obj_set_pos(parent_docker, 0, 0);
   lv_obj_set_scrollbar_mode(lv_scr_act(), LV_SCROLLBAR_MODE_OFF); 
   lv_obj_set_scroll_dir(parent_docker, LV_DIR_ALL); 
@@ -315,57 +180,98 @@ static void ui_layout_init(void){
   lv_obj_set_style_border_width(parent_docker, 0, 0);
   lv_obj_align(parent_docker, LV_ALIGN_TOP_LEFT, 0, 0);
 
-  // Create loading page
-  loading_page = lv_obj_create(parent_docker);
-  lv_obj_set_size(loading_page, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(loading_page, 0 , 0);
-  lv_obj_set_style_pad_all(loading_page, 0, 0);
-  lv_obj_set_style_border_width(loading_page, 0, 0);
-  lv_obj_set_scrollbar_mode(loading_page, LV_SCROLLBAR_MODE_OFF); 
-  lv_obj_t *loading_img_obj = lv_img_create(loading_page);
-  lv_img_set_src(loading_img_obj, &loading_img);
-  lv_obj_set_size(loading_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(loading_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-  // Create config page
-  config_page = lv_obj_create(parent_docker);
-  lv_obj_set_size(config_page, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(config_page, 0 * SCREEN_WIDTH, 1 * SCREEN_HEIGHT); 
-  lv_obj_set_style_pad_all(config_page, 0, 0);
-  lv_obj_set_style_border_width(config_page, 0, 0);
-  lv_obj_set_scrollbar_mode(config_page, LV_SCROLLBAR_MODE_OFF); 
-  lv_obj_t *config_img_obj = lv_img_create(config_page);
-  lv_img_set_src(config_img_obj, &config_img);
-  lv_obj_set_size(config_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(config_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-  // Create miner page  
-  price_page = lv_obj_create(parent_docker);
-  lv_obj_set_size(price_page, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(price_page, 1 * SCREEN_WIDTH, 0);
-  lv_obj_set_style_pad_all(price_page, 0, 0);
-  lv_obj_set_style_border_width(price_page, 0, 0);
-  lv_obj_set_scrollbar_mode(price_page, LV_SCROLLBAR_MODE_OFF); 
-  lv_obj_t *miner_img_obj = lv_img_create(price_page);
-  lv_img_set_src(miner_img_obj, &miner_img);
-  lv_obj_set_size(miner_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(miner_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-  // Create clock page  
-  clock_page = lv_obj_create(parent_docker);
-  lv_obj_set_size(clock_page, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(clock_page, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_style_pad_all(clock_page, 0, 0);
-  lv_obj_set_style_border_width(clock_page, 0, 0);
-  lv_obj_set_scrollbar_mode(clock_page, LV_SCROLLBAR_MODE_OFF); 
-  lv_obj_t *clock_img_obj = lv_img_create(clock_page);
-  lv_img_set_src(clock_img_obj, &clock_img);
-  lv_obj_set_size(clock_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(clock_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+  // Create loading menu page
+  loading_menu_page = lv_obj_create(parent_docker);
+  lv_obj_set_size(loading_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(loading_menu_page, 0 , 0);
+  lv_obj_set_style_pad_all(loading_menu_page, 0, 0);
+  lv_obj_set_style_border_width(loading_menu_page, 0, 0);
+  lv_obj_set_scrollbar_mode(loading_menu_page, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(loading_menu_page);
+  lv_img_set_src(background_img_obj, &lv_menu_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create price menu page  
+  price_menu_page = lv_obj_create(parent_docker);
+  lv_obj_set_size(price_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(price_menu_page, 1 * SCREEN_WIDTH, 0);
+  lv_obj_set_style_pad_all(price_menu_page, 0, 0);
+  lv_obj_set_style_border_width(price_menu_page, 0, 0);
+  lv_obj_set_scrollbar_mode(price_menu_page, LV_SCROLLBAR_MODE_OFF); 
+  lv_obj_t *price_img_obj = lv_img_create(price_menu_page);
+  lv_img_set_src(price_img_obj, &lv_menu_img);
+  lv_obj_set_size(price_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(price_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create weather menu page  
+  weather_menu_page = lv_obj_create(parent_docker);
+  lv_obj_set_size(weather_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(weather_menu_page, 2 * SCREEN_WIDTH, 0);
+  lv_obj_set_style_pad_all(weather_menu_page, 0, 0);
+  lv_obj_set_style_border_width(weather_menu_page, 0, 0);
+  lv_obj_set_scrollbar_mode(weather_menu_page, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(weather_menu_page);
+  lv_img_set_src(background_img_obj, &lv_menu_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create clock menu page  
+  clock_menu_page = lv_obj_create(parent_docker);
+  lv_obj_set_size(clock_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(clock_menu_page, 3 * SCREEN_WIDTH, 0);
+  lv_obj_set_style_pad_all(clock_menu_page, 0, 0);
+  lv_obj_set_style_border_width(clock_menu_page, 0, 0);
+  lv_obj_set_scrollbar_mode(clock_menu_page, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(clock_menu_page);
+  lv_img_set_src(background_img_obj, &lv_menu_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create idea menu page  
+  idea_menu_page = lv_obj_create(parent_docker);
+  lv_obj_set_size(idea_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(idea_menu_page, 4 * SCREEN_WIDTH, 0);
+  lv_obj_set_style_pad_all(idea_menu_page, 0, 0);
+  lv_obj_set_style_border_width(idea_menu_page, 0, 0);
+  lv_obj_set_scrollbar_mode(idea_menu_page, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(idea_menu_page);
+  lv_img_set_src(background_img_obj, &lv_menu_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create album menu page  
+  album_menu_page = lv_obj_create(parent_docker);
+  lv_obj_set_size(album_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(album_menu_page, 5 * SCREEN_WIDTH, 0);
+  lv_obj_set_style_pad_all(album_menu_page, 0, 0);
+  lv_obj_set_style_border_width(album_menu_page, 0, 0);
+  lv_obj_set_scrollbar_mode(album_menu_page, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(album_menu_page);
+  lv_img_set_src(background_img_obj, &lv_menu_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create setting menu page
+  settings_menu_page = lv_obj_create(parent_docker);
+  lv_obj_set_size(settings_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(settings_menu_page, 6 * SCREEN_WIDTH, 0);
+  lv_obj_set_style_pad_all(settings_menu_page, 0, 0);
+  lv_obj_set_style_border_width(settings_menu_page, 0, 0);
+  lv_obj_set_scrollbar_mode(settings_menu_page, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(settings_menu_page);
+  lv_img_set_src(background_img_obj, &lv_menu_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
   // Create g_pages array
-  g_pages[PAGE_LOADING] = loading_page;
-  g_pages[PAGE_CONFIG]  = config_page;
-  g_pages[PAGE_PRICE_RANK]   = price_page;
-  g_pages[PAGE_WEATHER] = weather_page; 
-  g_pages[PAGE_CLOCK]   = clock_page; 
+  g_pages[MENU_PAGE_LOADING]      = loading_menu_page;
+  g_pages[MENU_PAGE_PRICE]        = price_menu_page;
+  g_pages[MENU_PAGE_WEATHER]      = weather_menu_page; 
+  g_pages[MENU_PAGE_CLOCK]        = clock_menu_page; 
+  g_pages[MENU_PAGE_IDEA]         = idea_menu_page;
+  g_pages[MENU_PAGE_ALBUM]        = album_menu_page;
+  g_pages[MENU_PAGE_SETTINGS]     = settings_menu_page;
   ////////////////////////////////////// loading page layout ///////////////////////////////////////////////
  
 }
@@ -380,7 +286,7 @@ static void ui_update_loading_string(String str, uint32_t color, bool prgress_up
 static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
   // https://s2.coinmarketcap.com/static/img/coins/32x32/1.png
   if(map.empty()) return;
-  if(g_pages[PAGE_PRICE_RANK] == NULL) return;
+  if(g_pages[MENU_PAGE_PRICE] == NULL) return;
 
   static const uint8_t rank_max = 7; // Maximum number of coins to display
   static lv_img_dsc_t coin_icon_img_dsc[rank_max];
@@ -391,11 +297,11 @@ static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
   for(uint8_t i = 0; i < rank_max; i++) {
       //create or update the icon image
       if(icon_png_list[i] == NULL) {
-          icon_png_list[i] = lv_img_create(g_pages[PAGE_PRICE_RANK]);
+          icon_png_list[i] = lv_img_create(g_pages[MENU_PAGE_PRICE]);
           lv_obj_align(icon_png_list[i], LV_ALIGN_TOP_LEFT, 0, i * 33 + 2);
       }
       if(lb_crypto_coin_price[i] == NULL) {
-          lb_crypto_coin_price[i] = lv_label_create(g_pages[PAGE_PRICE_RANK]);
+          lb_crypto_coin_price[i] = lv_label_create(g_pages[MENU_PAGE_PRICE]);
           lv_color_t font_color = lv_color_hex(0xFFFFFF);
           lv_obj_set_width(lb_crypto_coin_price[i], SCREEN_WIDTH);
           lv_label_set_text(lb_crypto_coin_price[i], "");
@@ -458,8 +364,8 @@ static void ui_refresh_thread(void *args){
     delay(1000);
 
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
-      if(g_page_index == PAGE_PRICE_RANK) ui_price_page_rank_refresh(g_nm.coin_price_rank);
-      else if(g_page_index == PAGE_CLOCK) ui_clock_page_refresh();
+      if(g_page_index == MENU_PAGE_PRICE) ui_price_page_rank_refresh(g_nm.coin_price_rank);
+      else if(g_page_index == MENU_PAGE_CLOCK) ui_clock_page_refresh();
       //release mutex
       xSemaphoreGive(lvgl_xMutex); 
     }
@@ -480,7 +386,16 @@ static void ui_refresh_thread(void *args){
 }
 
 void ui_switch_next_page_cb(){
-  g_page_index = (g_page_index == PAGE_PRICE_RANK) ? PAGE_CLOCK : PAGE_PRICE_RANK;
+  g_page_index++;
+  g_page_index = (g_page_index == MENU_PAGE_END) ? MENU_PAGE_PRICE : g_page_index;
+  ui_switch_to_page(g_page_index, true);
+  g_nm.screen.last_operaion = millis();
+}
+
+
+void ui_switch_previous_page_cb(){
+  g_page_index--;
+  g_page_index = (g_page_index == MENU_PAGE_LOADING) ? MENU_PAGE_SETTINGS : g_page_index;
   ui_switch_to_page(g_page_index, true);
   g_nm.screen.last_operaion = millis();
 }
@@ -518,10 +433,10 @@ void display_thread(void *args){
   xTaskCreatePinnedToCore(ui_refresh_thread, taskName.c_str(), 1024*2.5, (void*)taskName.c_str(), TASK_PRIORITY_UI_REFRESH, &task_ui_refresh, UiRefreshTaskCore);
   delay(500);
 
-  ui_switch_to_page(PAGE_LOADING, true);
+  ui_switch_to_page(MENU_PAGE_LOADING, true);
 
   /***************************************switch to miner page*************************************/
-  ui_switch_to_page(PAGE_PRICE_RANK, true);
+  ui_switch_to_page(MENU_PAGE_PRICE, true);
   vTaskDelete(NULL);
 }
 #endif //TFT_DISPLAY

@@ -227,7 +227,7 @@ typedef crypto_coin_node_t ccoin_node;
 
 typedef struct{
     coord_info_t        coord;    // fetch from public IP API
-    uint32_t            tz_offest; // Timezone offset in hours, e.g., +8 for UTC+8
+    float               tz_offest; // Timezone offset in hours, e.g., +8 for UTC+8
     bool                tz_updated;
     uint32_t            timestamp; 
 }location_info_t;

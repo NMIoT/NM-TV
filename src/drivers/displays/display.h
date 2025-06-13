@@ -5,6 +5,7 @@
 
 void tft_bl_active(void);
 void ui_switch_next_page_cb();
+void ui_switch_previous_page_cb();
 void display_thread(void *args);
 
 #endif // DISPLAY_H
