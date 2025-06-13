@@ -42,15 +42,16 @@ static lv_color_t          *lvgl_color_buf = NULL;
 static lv_disp_draw_buf_t   draw_buf;
 static SemaphoreHandle_t    lvgl_xMutex;
 static lv_obj_t *parent_docker = NULL;
-static lv_obj_t *g_menu_pages[MENU_PAGE_END - 1] = {NULL,},
-                *g_sub_menu_pages[SUB_MENU_PAGE_END - 1] = {NULL,};
+static lv_obj_t *g_menu_pages[MENU_PAGE_END] = {NULL,},
+                *g_sub_menu_pages[SUB_MENU_PAGE_END] = {NULL,};
 static lv_obj_t *loading_menu_page = NULL, 
                  *price_menu_page = NULL,
                  *weather_menu_page = NULL,
                  *clock_menu_page = NULL, 
                  *idea_menu_page = NULL, 
                  *album_menu_page = NULL,
-                 *settings_menu_page = NULL;
+                 *settings_menu_page = NULL,
+                 *clone_price_menu_page = NULL;
 static lv_obj_t  *sub_menu_page_0 = NULL, 
                  *sub_menu_page_1 = NULL, 
                  *sub_menu_page_2 = NULL, 
@@ -182,7 +183,7 @@ static void ui_layout_init(void){
   lv_obj_t *background_img_obj = NULL;
   //create parent object
   parent_docker = lv_obj_create(lv_scr_act());
-  lv_obj_set_size(parent_docker, SCREEN_WIDTH * 7, SCREEN_HEIGHT * 2); 
+  lv_obj_set_size(parent_docker, SCREEN_WIDTH * 8, SCREEN_HEIGHT * 2); 
   lv_obj_set_pos(parent_docker, 0, 0);
   lv_obj_set_scrollbar_mode(lv_scr_act(), LV_SCROLLBAR_MODE_OFF); 
   lv_obj_set_scroll_dir(parent_docker, LV_DIR_ALL); 
@@ -277,6 +278,21 @@ static void ui_layout_init(void){
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
+
+  // Create clone price menu page
+  clone_price_menu_page = lv_obj_create(parent_docker);
+  lv_obj_set_size(clone_price_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(clone_price_menu_page, 7 * SCREEN_WIDTH, 0);
+  lv_obj_set_style_pad_all(clone_price_menu_page, 0, 0);
+  lv_obj_set_style_border_width(clone_price_menu_page, 0, 0);
+  lv_obj_set_scrollbar_mode(clone_price_menu_page, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(clone_price_menu_page);
+  lv_img_set_src(background_img_obj, &lv_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+
+
   // Create g_menu_pages array
   g_menu_pages[MENU_PAGE_LOADING]      = loading_menu_page;
   g_menu_pages[MENU_PAGE_PRICE]        = price_menu_page;
@@ -285,6 +301,7 @@ static void ui_layout_init(void){
   g_menu_pages[MENU_PAGE_IDEA]         = idea_menu_page;
   g_menu_pages[MENU_PAGE_ALBUM]        = album_menu_page;
   g_menu_pages[MENU_PAGE_SETTINGS]     = settings_menu_page;
+  g_menu_pages[MENU_PAGE_END]          = clone_price_menu_page;   // clone first page to the end for easy access
   ////////////////////////////////////// price menu page layout ///////////////////////////////////////////////
   lv_coord_t width = 0;
   String title = "Price";
@@ -292,13 +309,13 @@ static void ui_layout_init(void){
   width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
   lv_obj_t *lb_menu_title  = NULL;
   
-  // lb_menu_title = lv_label_create(price_menu_page);
-  // lv_obj_set_width(lb_menu_title, width);
-  // lv_label_set_text( lb_menu_title, title.c_str());
-  // lv_obj_set_style_text_font(lb_menu_title, lb_menu_title_font, LV_PART_MAIN);
-  // lv_obj_set_style_text_color(lb_menu_title, font_color, LV_PART_MAIN); 
-  // lv_label_set_long_mode(lb_menu_title, LV_LABEL_LONG_DOT);
-  // lv_obj_align( lb_menu_title, LV_ALIGN_CENTER, 0,0); 
+  lb_menu_title = lv_label_create(price_menu_page);
+  lv_obj_set_width(lb_menu_title, width);
+  lv_label_set_text( lb_menu_title, title.c_str());
+  lv_obj_set_style_text_font(lb_menu_title, lb_menu_title_font, LV_PART_MAIN);
+  lv_obj_set_style_text_color(lb_menu_title, font_color, LV_PART_MAIN); 
+  lv_label_set_long_mode(lb_menu_title, LV_LABEL_LONG_DOT);
+  lv_obj_align( lb_menu_title, LV_ALIGN_CENTER, 0,0); 
   ////////////////////////////////////// weather menu page layout /////////////////////////////////////////////
   title = "Weather";
   font_color = lv_color_hex(0xFFFFFF);
@@ -354,11 +371,17 @@ static void ui_layout_init(void){
   lv_obj_set_style_text_color(lb_menu_title, font_color, LV_PART_MAIN); 
   lv_label_set_long_mode(lb_menu_title, LV_LABEL_LONG_DOT);
   lv_obj_align( lb_menu_title, LV_ALIGN_CENTER, 0,0); 
-
-
-
-
-
+  ////////////////////////////////////// clone price menu page layout /////////////////////////////////////////////
+  title = "Price";
+  font_color = lv_color_hex(0xFFFFFF);
+  width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
+  lb_menu_title  = lv_label_create(clone_price_menu_page);
+  lv_obj_set_width(lb_menu_title, width);
+  lv_label_set_text( lb_menu_title, title.c_str());
+  lv_obj_set_style_text_font(lb_menu_title, lb_menu_title_font, LV_PART_MAIN);
+  lv_obj_set_style_text_color(lb_menu_title, font_color, LV_PART_MAIN); 
+  lv_label_set_long_mode(lb_menu_title, LV_LABEL_LONG_DOT);
+  lv_obj_align( lb_menu_title, LV_ALIGN_CENTER, 0,0); 
   /*************************************** sub menu layout******************************************/
   // Create sub menu page0  
   sub_menu_page_0 = lv_obj_create(parent_docker);
@@ -533,7 +556,8 @@ static void ui_clock_page_refresh(){
 
 static void ui_switch_to_page(uint8_t page, bool anim){
   g_menu_page_index = page;
-  if(anim) lv_obj_scroll_to_view(g_menu_pages[g_menu_page_index], LV_ANIM_ON);
+  // if(anim) lv_obj_scroll_to_view(g_menu_pages[g_menu_page_index], LV_ANIM_ON);
+  lv_obj_scroll_to_view(g_menu_pages[g_menu_page_index], anim ? LV_ANIM_ON : LV_ANIM_OFF);
 }
 
 static void ui_refresh_thread(void *args){
@@ -546,8 +570,8 @@ static void ui_refresh_thread(void *args){
     delay(1000);
 
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
-      if(g_menu_page_index == MENU_PAGE_PRICE) ui_price_page_rank_refresh(g_nm.coin_price_rank);
-      else if(g_menu_page_index == MENU_PAGE_CLOCK) ui_clock_page_refresh();
+      // if(g_menu_page_index == MENU_PAGE_PRICE) ui_price_page_rank_refresh(g_nm.coin_price_rank);
+      // else if(g_menu_page_index == MENU_PAGE_CLOCK) ui_clock_page_refresh();
       //release mutex
       xSemaphoreGive(lvgl_xMutex); 
     }
@@ -569,9 +593,13 @@ static void ui_refresh_thread(void *args){
 
 void ui_switch_next_page_cb(){
   g_menu_page_index++;
-  g_menu_page_index = (g_menu_page_index == MENU_PAGE_END) ? MENU_PAGE_PRICE : g_menu_page_index;
   ui_switch_to_page(g_menu_page_index, true);
-  g_nm.screen.last_operaion = millis();
+  if(g_menu_page_index == MENU_PAGE_END){
+      g_menu_page_index = MENU_PAGE_PRICE;        //reset to loading page
+      delay(1000);                                //wait for the page to switch
+      ui_switch_to_page(g_menu_page_index, false);
+      LOG_W("Switch to first page, index reset to %d", g_menu_page_index);
+  }
 }
 
 
@@ -579,7 +607,6 @@ void ui_switch_previous_page_cb(){
   g_menu_page_index--;
   g_menu_page_index = (g_menu_page_index == MENU_PAGE_LOADING) ? MENU_PAGE_SETTINGS : g_menu_page_index;
   ui_switch_to_page(g_menu_page_index, true);
-  g_nm.screen.last_operaion = millis();
 }
 
 
