@@ -807,6 +807,7 @@ static void ui_refresh_thread(void *args){
 
       if(xSemaphoreTake(ui_state.ok_cancel_xsem, 0) == pdTRUE){
         if(ui_state.current_screen_type == MENU_SCREEN){
+          ui_state.sub_menu_page_index = ui_state.menu_page_index; 
           lv_obj_scroll_to_view(sub_menu_pages[ui_state.sub_menu_page_index], LV_ANIM_ON);
           ui_state.current_screen_type = SUB_MENU_SCREEN;
         }
