@@ -208,13 +208,13 @@ typedef struct{
 
 typedef struct{
     bool      orientation;
-    uint16_t  refresh_interval;
+    // uint16_t  refresh_interval;
     int       sleep_timeout;
     bool      auto_brightness_adjust;
     int       reg_adc;
     uint8_t   brightness;
     bool      active;
-    bool      saver_enable;//屏保功能使能
+    bool      saver_enable;
     uint32_t  last_operaion;
     uint16_t  cnt;
 }screen_info_t;

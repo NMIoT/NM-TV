@@ -312,8 +312,8 @@ bool load_g_nm(void){
         g_nm.board.model                     = BOARD_MODEL;
 
         g_nm.screen.orientation              = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREEN_ORIENT, false);
-        g_nm.screen.refresh_interval         = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
-        g_nm.screen.refresh_interval         = (g_nm.screen.refresh_interval < 1) ? 1 : g_nm.screen.refresh_interval;
+        // g_nm.screen.refresh_interval         = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
+        // g_nm.screen.refresh_interval         = (g_nm.screen.refresh_interval < 1) ? 1 : g_nm.screen.refresh_interval;
         g_nm.screen.sleep_timeout            = nvs_config_get_u16(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREENTIMEOUT, DEFAULT_SCREEN_TIMEOUT);
         g_nm.screen.brightness               = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_SCREEN_BRIGHTNESS, DEFAULT_SCREEN_BRIGHTNESS);
         g_nm.screen.auto_brightness_adjust   = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_AUTO_BRIGHTNESS, false);
@@ -324,9 +324,7 @@ bool load_g_nm(void){
         g_nm.location.tz_offest              = 0;
         
         g_nm.need_cfg                        = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, false);
-
         
-        // g_nm.market    = new MarketClass(MARKET_HOST, MARKET_PORT, MARKET_URL, "BTC_USDT");
         nvs_init_flag = true;
     }
     

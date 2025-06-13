@@ -193,45 +193,17 @@ const lv_img_dsc_t clock_img = {
     .data = (const uint8_t *)global_img_array, 
 };
 
-#if defined(HAS_SCREEN_SAVER_FEATURE)
-const lv_img_dsc_t saver_img = {
-  .header = {
-#if defined (AMOLED_DISPLAY)
-      .cf = LV_IMG_CF_TRUE_COLOR_ALPHA , 
-#elif defined (TFT_DISPLAY)
-      .cf = LV_IMG_CF_TRUE_COLOR,
-#endif 
-      .always_zero = 0,
-      .reserved = 0,
-      .w = SCREEN_WIDTH,  
-      .h = SCREEN_HEIGHT,  
-  },
-#if defined (AMOLED_DISPLAY)
-  .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_IMG_PX_SIZE_ALPHA_BYTE,
-#elif defined (TFT_DISPLAY)
-  .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
-#endif
-  .data = (const uint8_t *)saver_img_array, 
-};
-#endif
-
-
 static int blpwmChannel = 0;  
 static void tft_bl_ctrl(float brightness) {
-#ifdef TFT_DISPLAY
-    if (TFT_BL != -1) {
-      // 确保亮度在 0 到 1 之间
-      brightness = brightness <= 0 ? 0 : (brightness >= 1 ? 1 : brightness);
-      uint8_t pwm = (TFT_BACKLIGHT_ON == HIGH) ? (uint8_t)(brightness * 255) : (uint8_t)((1 - brightness) * 255);
-      ledcWrite(blpwmChannel, pwm);
-    }
-#elif defined(AMOLED_DISPLAY)
-    amoled.setBrightness(brightness * 255);
-#endif
+  if (TFT_BL != -1) {
+    // 确保亮度在 0 到 1 之间
+    brightness = brightness <= 0 ? 0 : (brightness >= 1 ? 1 : brightness);
+    uint8_t pwm = (TFT_BACKLIGHT_ON == HIGH) ? (uint8_t)(brightness * 255) : (uint8_t)((1 - brightness) * 255);
+    ledcWrite(blpwmChannel, pwm);
+  }
 }
 
 void tft_bl_active(void){
-#ifdef TFT_DISPLAY
   if(TFT_BL!=-1){
     g_nm.screen.active = true;
     g_nm.screen.cnt = 0;
@@ -239,7 +211,6 @@ void tft_bl_active(void){
     brightness = brightness <= 0 ? 1 : brightness;//亮度为0时默认为用户设置的起始亮度
     tft_bl_ctrl(brightness);
   }
-#endif
   g_nm.screen.last_operaion = millis();
 }
 
@@ -277,14 +248,10 @@ static void disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color
     uint32_t w = ( area->x2 - area->x1 + 1 );
     uint32_t h = ( area->y2 - area->y1 + 1 );
 
-#ifdef TFT_DISPLAY
     tft.startWrite();
     tft.setAddrWindow( area->x1 , area->y1 , w , h  );
     tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
     tft.endWrite();
-#elif defined(AMOLED_DISPLAY)
-    static_cast<LilyGo_Display *>(disp_drv->user_data)->pushColors(area->x1, area->y1, w, h, (uint16_t *)color_p);
-#endif
     lv_disp_flush_ready(disp_drv);
 }
 
@@ -409,10 +376,6 @@ static void ui_update_loading_string(String str, uint32_t color, bool prgress_up
 
 }
 
-static void ui_saver_page_init(){
-
-}
-
 
 static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
   // https://s2.coinmarketcap.com/static/img/coins/32x32/1.png
@@ -472,57 +435,6 @@ static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
       lv_label_set_text_fmt(lb_crypto_coin_price[index], "%s", price_str);
       index++;
   }
-
-
-  // for(auto it = map.begin(); it != map.end(); ++it) {
-  //     ccoin_node &coin = it->second;
-  //     if(coin.icon.addr == NULL || coin.icon.size == 0) continue; //skip if icon data is not available
-
-  //     //create or update the icon image
-  //     if(icon_png_list[index] == NULL && coin.icon.addr != NULL) {
-  //         icon_png_list[index] = lv_img_create(g_pages[PAGE_PRICE_RANK]);
-
-  //         //update coin icon image descriptor
-  //         coin_icon_img_dsc[index].header.cf = LV_IMG_CF_RAW_ALPHA;
-  //         coin_icon_img_dsc[index].header.w = 0; //auto width
-  //         coin_icon_img_dsc[index].header.h = 0; //auto height
-  //         coin_icon_img_dsc[index].header.always_zero = 0;
-  //         coin_icon_img_dsc[index].header.reserved = 0;
-  //         coin_icon_img_dsc[index].data_size = coin.icon.size;
-  //         coin_icon_img_dsc[index].data      = (const uint8_t *)coin.icon.addr;
-  //     }
-  //     if(lb_crypto_coin_price[index] == NULL) {
-  //         lb_crypto_coin_price[index] = lv_label_create(g_pages[PAGE_PRICE_RANK]);
-  //         lv_color_t font_color = lv_color_hex(0xFFFFFF);
-  //         lv_obj_set_width(lb_crypto_coin_price[index], SCREEN_WIDTH);
-  //         lv_obj_set_style_text_color(lb_crypto_coin_price[index], font_color, LV_PART_MAIN); 
-  //         lv_obj_set_style_text_font(lb_crypto_coin_price[index], &lv_font_montserrat_34, 0);
-  //         lv_obj_align(lb_crypto_coin_price[index], LV_ALIGN_TOP_LEFT, 40, index * 33);
-  //     }
-
-  //     String price_str = "$" + String(coin.price.realtime, 1);
-  //     lv_coord_t width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), &lv_font_montserrat_34, 0, LV_TEXT_FLAG_NONE);
-  //     lv_obj_set_width(lb_crypto_coin_price[index], width);
-  //     lv_label_set_text_fmt(lb_crypto_coin_price[index], "%s", price_str);
-  //     index++;
-  // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 static void ui_clock_page_refresh(){
@@ -530,70 +442,6 @@ static void ui_clock_page_refresh(){
 }
 
 
-#if defined(HAS_SCREEN_SAVER_FEATURE)
-static bool saver_init = false;
-static void ui_saver_page_refresh(){
-  #define STAR_COUNT   20               // 星星数量
-  static uint8_t MAX_DEPTH  = 10;       // 最大深度层级
-  static uint8_t MIN_STAR_SIZE = 1;     // 最小星星尺寸
-  static uint8_t MAX_STAR_SIZE = 3;     // 最大星星尺寸
-  static star_t  stars[STAR_COUNT];     // 星星数组
-  static lv_obj_t *bg_img = NULL;       // 背景图
-  static lv_style_t style;
-
-
-  if (saver_scr == NULL) {
-    // 1. 创建屏保图层
-    saver_scr = lv_obj_create(lv_scr_act());
-    lv_obj_set_size(saver_scr, LV_HOR_RES, LV_VER_RES);
-    lv_obj_align(saver_scr, LV_ALIGN_CENTER, 0, 0);
-
-    // 2. 禁用滚动条和圆角
-    lv_obj_set_scrollbar_mode(saver_scr, LV_SCROLLBAR_MODE_OFF);
-
-    // 3. 设置屏保图层样式（半透明黑背景）
-    lv_style_init(&style);
-    lv_style_set_radius(&style, 0);              // 禁用圆角
-    lv_style_set_bg_color(&style, lv_color_black());
-    lv_style_set_bg_opa(&style, LV_OPA_70);
-    lv_style_set_border_width(&style, 0);
-    lv_style_set_border_opa(&style, LV_OPA_TRANSP);
-    lv_obj_add_style(saver_scr, &style, LV_PART_MAIN);
-
-    // 4. 创建背景图片
-    bg_img = lv_img_create(saver_scr);  // 图片作为 saver_scr 的子对象
-    lv_img_set_src(bg_img, &saver_img);  
-    lv_obj_align(bg_img, LV_ALIGN_CENTER, 0, 0);  // 居中显示
-    lv_obj_move_background(bg_img);  // 确保图片在星星之下
-  }
-
-  lv_coord_t width  = lv_obj_get_width(saver_scr);
-  lv_coord_t height = lv_obj_get_height(saver_scr);
-
-  if(width != LV_HOR_RES || height != LV_VER_RES) return;
-
-  if(!saver_init){
-    for(int i = 0; i < STAR_COUNT; i++) {
-      stars[i].obj = NULL;
-      stars[i].active = false;
-      reset_star(&stars[i], saver_scr);
-    }
-    saver_init = true;
-  }
-
-  //更新星星
-  for(int i = 0; i < STAR_COUNT; i++) {
-      update_star(&stars[i], saver_scr);
-  }
-}
-void ui_delete_screensaver() {
-  if(saver_scr != NULL) {
-      lv_obj_del(saver_scr);  // 删除对象及其所有子对象
-      saver_scr = NULL;       // 重置指针避免野指针
-      saver_init = false;     // 重置初始化状态
-  }
-}
-#endif
 
 static void ui_switch_to_page(uint8_t page, bool anim){
   g_page_index = page;
@@ -606,22 +454,11 @@ static void ui_refresh_thread(void *args){
   LOG_I("%s thread started on core %d...", name, xPortGetCoreID());
   free(name);
 
-  uint32_t refresh = 1000 * g_nm.screen.refresh_interval;
   while (true){
-    delay(refresh);
+    delay(1000);
 
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
-      if(g_page_index == PAGE_PRICE_RANK) {
-          // static auto it = g_nm.coin_price_rank.begin();
-          // if(!g_nm.coin_price_rank.empty()) {
-          //     ui_price_page_rank_refresh(it->second);
-          //     it++;
-          //     it = (it == g_nm.coin_price_rank.end()) ? g_nm.coin_price_rank.begin() : it;
-          // }
-
-
-          ui_price_page_rank_refresh(g_nm.coin_price_rank);
-      }
+      if(g_page_index == PAGE_PRICE_RANK) ui_price_page_rank_refresh(g_nm.coin_price_rank);
       else if(g_page_index == PAGE_CLOCK) ui_clock_page_refresh();
       //release mutex
       xSemaphoreGive(lvgl_xMutex); 
@@ -643,21 +480,14 @@ static void ui_refresh_thread(void *args){
 }
 
 void ui_switch_next_page_cb(){
-  g_page_index = (g_page_index == PAGE_PRICE_RANK) ? PAGE_CLOCK : PAGE_PRICE_RANK;//在miner页面和clock页面之间切换
-  uint8_t default_interval = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_REFRESHINTERV, DEFAULT_REFRESH_INTERVAL);
-  g_nm.screen.refresh_interval = (g_page_index == PAGE_CLOCK) ? 1 : default_interval;
+  g_page_index = (g_page_index == PAGE_PRICE_RANK) ? PAGE_CLOCK : PAGE_PRICE_RANK;
   ui_switch_to_page(g_page_index, true);
   g_nm.screen.last_operaion = millis();
 }
 
 
-
-
-
-
-void lvgl_log_cb(const char * buf)
-{
-    Serial.println(buf);
+static void lvgl_log_cb(const char * buf){
+    Serial.print(buf);
 }
 
 
@@ -692,7 +522,6 @@ void display_thread(void *args){
 
   /***************************************switch to miner page*************************************/
   ui_switch_to_page(PAGE_PRICE_RANK, true);
-  g_nm.screen.last_operaion = millis();
   vTaskDelete(NULL);
 }
 #endif //TFT_DISPLAY

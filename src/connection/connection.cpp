@@ -67,7 +67,7 @@ bool wifi_config(bool blocking){
     wm.setShowInfoUpdate(false); // Hide update info
     wm.setShowPassword(true); // Show password
 
-    WiFiManagerParameter tb_ui_refresh_intv(JSON_SPIFFS_KEY_REFRESHINTERV, "UI refresh interval(second)", String(g_nm.screen.refresh_interval).c_str(), 2);
+    // WiFiManagerParameter tb_ui_refresh_intv(JSON_SPIFFS_KEY_REFRESHINTERV, "UI refresh interval(second)", String(g_nm.screen.refresh_interval).c_str(), 2);
     WiFiManagerParameter tb_scr_sleep(JSON_SPIFFS_KEY_SCREENTIMEOUT, "Screen sleep time out, second (0s for always on)", String(g_nm.screen.sleep_timeout).c_str(), 4);
     WiFiManagerParameter tb_scr_brightness(JSON_SPIFFS_KEY_SCREEN_BRIGHTNESS, "Initial screen brightnes(0~100)", String(g_nm.screen.brightness).c_str(), 3);
 
@@ -79,9 +79,9 @@ bool wifi_config(bool blocking){
 
 
 
-#if defined(TFT_DISPLAY) || defined(OLED_DISPLAY)
-    wm.addParameter(&tb_ui_refresh_intv);
-#endif
+// #if defined(TFT_DISPLAY) || defined(OLED_DISPLAY)
+//     wm.addParameter(&tb_ui_refresh_intv);
+// #endif
 
 #if ((TFT_BL != -1) && defined(TFT_DISPLAY)) || defined(AMOLED_DISPLAY)
     wm.addParameter(&tb_scr_sleep);
