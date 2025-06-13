@@ -248,7 +248,7 @@ const LV_ATTRIBUTE_MEM_ALIGN uint16_t menu_img_array[] PROGMEM = {
 
 
 
-const lv_img_dsc_t lv_menu_img = {
+const lv_img_dsc_t lv_menu_back_img = {
     .header = {
         .cf = LV_IMG_CF_TRUE_COLOR,
         .always_zero = 0,
@@ -260,5 +260,17 @@ const lv_img_dsc_t lv_menu_img = {
     .data = (const uint8_t *)menu_img_array, 
 };
 
+
+const lv_img_dsc_t lv_sub_menu_back_img = {
+    .header = {
+        .cf = LV_IMG_CF_TRUE_COLOR,
+        .always_zero = 0,
+        .reserved = 0,
+        .w = SCREEN_WIDTH,  
+        .h = SCREEN_HEIGHT,  
+    },
+    .data_size = SCREEN_WIDTH * SCREEN_HEIGHT * LV_COLOR_SIZE / 8,
+    .data = (const uint8_t *)menu_img_array, 
+};
 
 #endif

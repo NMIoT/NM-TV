@@ -40,6 +40,6 @@ void button_thread_entry(void *args){
 
   while (true){
     tbtn.tick();
-    delay(30);
+    delay(50);
   }
 }
