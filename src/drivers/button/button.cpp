@@ -34,7 +34,7 @@ void button_thread_entry(void *args){
   });
   tbtn.attachLongPress([](){ 
     LOG_W("long press detected");
-    // force_cfg_cb();
+    ui_enter_or_exit_current_page_cb();
   });
 
 

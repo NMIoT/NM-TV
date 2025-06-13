@@ -65,7 +65,7 @@ void monitor_thread_entry(void *args){
             continue;
         }
 
-        LOG_W("Free memory: %.3fkB, time : %s" , ESP.getFreeHeap() / 1024.0f, convert_time_to_local(g_nm.location.timestamp).c_str());
+        LOG_D("Free memory: %.3fkB, time : %s" , ESP.getFreeHeap() / 1024.0f, convert_time_to_local(g_nm.location.timestamp).c_str());
     }
     LOG_W("%s thread exit", __FUNCTION__);
     delay(1000);

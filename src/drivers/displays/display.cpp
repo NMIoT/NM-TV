@@ -25,7 +25,8 @@ enum{
 };
 
 enum{
-  SUB_MENU_PAGE_0 = 0,
+  SUB_MENU_PAGE_BEGIN = 0,
+  SUB_MENU_PAGE_0,
   SUB_MENU_PAGE_1,
   SUB_MENU_PAGE_2,
   SUB_MENU_PAGE_3,
@@ -34,7 +35,10 @@ enum{
   SUB_MENU_PAGE_END
 };
 
-
+typedef enum{
+  MENU_SCREEN = 0, // menu page
+  SUB_MENU_SCREEN, // sub menu page
+} screen_type_t;
 
 /*********************************************************************全局lvgl对象********************************************************************/
 static lv_color_t          *lvgl_color_buf = NULL;
@@ -51,16 +55,28 @@ static lv_obj_t  *clone_setting_menu_page = NULL,
                  *album_menu_page = NULL,
                  *settings_menu_page = NULL,
                  *clone_price_menu_page = NULL;
-static lv_obj_t  *sub_menu_page_0 = NULL, 
+static lv_obj_t  *sub_menu_page_5_clone = NULL,
+                 *sub_menu_page_0 = NULL, 
                  *sub_menu_page_1 = NULL, 
                  *sub_menu_page_2 = NULL, 
                  *sub_menu_page_3 = NULL, 
                  *sub_menu_page_4 = NULL, 
-                 *sub_menu_page_5 = NULL, 
-                 *sub_menu_page_6 = NULL;
-                 
-static uint16_t g_menu_page_index     = MENU_PAGE_PRICE, 
-                g_sub_menu_page_index = SUB_MENU_PAGE_0;
+                 *sub_menu_page_5 = NULL,
+                 *sub_menu_page_0_clone = NULL;
+
+typedef struct{
+  int menu_page_index; // current menu page index
+  int sub_menu_page_index; // current sub menu page index
+  screen_type_t current_screen_type; // current screen type, MENU_SCREEN or SUB_MENU_SCREEN
+}ui_state_t;
+
+ui_state_t g_ui_state = {
+  .menu_page_index          = MENU_PAGE_PRICE,
+  .sub_menu_page_index      = SUB_MENU_PAGE_0,
+  .current_screen_type      = MENU_SCREEN,
+};
+
+
 
 #include "image_240_240.h"
 // LV_FONT_DECLARE(ds_digib_font_10)
@@ -194,18 +210,33 @@ static void ui_boot_page_layout_init(void){
 
   /*************************************** menu layout******************************************/
   // Create loading menu page
-  lv_obj_t *loading_menu_page = lv_obj_create(loading_docker);
-  lv_obj_set_size(loading_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(loading_menu_page, 0 , 0);
-  lv_obj_set_style_pad_all(loading_menu_page, 0, 0);
-  lv_obj_set_style_border_width(loading_menu_page, 0, 0);
-  lv_obj_set_scrollbar_mode(loading_menu_page, LV_SCROLLBAR_MODE_OFF); 
-  background_img_obj = lv_img_create(loading_menu_page);
+  lv_obj_t *boot_menu_page = lv_obj_create(loading_docker);
+  lv_obj_set_size(boot_menu_page, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(boot_menu_page, 0 , 0);
+  lv_obj_set_style_pad_all(boot_menu_page, 0, 0);
+  lv_obj_set_style_border_width(boot_menu_page, 0, 0);
+  lv_obj_set_scrollbar_mode(boot_menu_page, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(boot_menu_page);
   lv_img_set_src(background_img_obj, &menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
   // display loading menu page
-  lv_obj_scroll_to_view(loading_menu_page, LV_ANIM_OFF);
+  lv_obj_scroll_to_view(boot_menu_page, LV_ANIM_OFF);
+
+
+
+
+  String title = "Boot...";
+  lv_color_t font_color = lv_color_hex(0xFFFFFF);
+  lv_coord_t width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_t *lb_menu_title  = lv_label_create(boot_menu_page);
+  lv_obj_set_width(lb_menu_title, width);
+  lv_label_set_text( lb_menu_title, title.c_str());
+  lv_obj_set_style_text_font(lb_menu_title, lb_menu_title_font, LV_PART_MAIN);
+  lv_obj_set_style_text_color(lb_menu_title, font_color, LV_PART_MAIN); 
+  lv_label_set_long_mode(lb_menu_title, LV_LABEL_LONG_DOT);
+  lv_obj_align( lb_menu_title, LV_ALIGN_CENTER, 0,0); 
+
 }
 
 static void ui_working_page_layout_init(void){
@@ -320,8 +351,6 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
-
-
   // Create g_menu_pages array
   g_menu_pages[MENU_PAGE_BEGIN]        = clone_setting_menu_page;
   g_menu_pages[MENU_PAGE_PRICE]        = price_menu_page;
@@ -332,6 +361,118 @@ static void ui_working_page_layout_init(void){
   g_menu_pages[MENU_PAGE_SETTINGS]     = settings_menu_page;
   g_menu_pages[MENU_PAGE_END]          = clone_price_menu_page;   // clone first page to the end for easy access
 
+
+
+/*************************************** sub menu layout******************************************/
+  // Create sub menu page5 clone
+  sub_menu_page_0 = lv_obj_create(parent_docker);
+  lv_obj_set_size(sub_menu_page_0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(sub_menu_page_0, 0, SCREEN_HEIGHT);
+  lv_obj_set_style_pad_all(sub_menu_page_0, 0, 0);
+  lv_obj_set_style_border_width(sub_menu_page_0, 0, 0);
+  lv_obj_set_scrollbar_mode(sub_menu_page_0, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(sub_menu_page_0);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create sub menu page0  
+  sub_menu_page_0 = lv_obj_create(parent_docker);
+  lv_obj_set_size(sub_menu_page_0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(sub_menu_page_0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_style_pad_all(sub_menu_page_0, 0, 0);
+  lv_obj_set_style_border_width(sub_menu_page_0, 0, 0);
+  lv_obj_set_scrollbar_mode(sub_menu_page_0, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(sub_menu_page_0);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create sub menu page1
+  sub_menu_page_1 = lv_obj_create(parent_docker);
+  lv_obj_set_size(sub_menu_page_1, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(sub_menu_page_1, 2 * SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_style_pad_all(sub_menu_page_1, 0, 0);
+  lv_obj_set_style_border_width(sub_menu_page_1, 0, 0);
+  lv_obj_set_scrollbar_mode(sub_menu_page_1, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(sub_menu_page_1);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+
+  // Create sub menu page2
+  sub_menu_page_2 = lv_obj_create(parent_docker);
+  lv_obj_set_size(sub_menu_page_2, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(sub_menu_page_2, 3 * SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_style_pad_all(sub_menu_page_2, 0, 0);
+  lv_obj_set_style_border_width(sub_menu_page_2, 0, 0);
+  lv_obj_set_scrollbar_mode(sub_menu_page_2, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(sub_menu_page_2);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+
+  // Create sub menu page3
+  sub_menu_page_3 = lv_obj_create(parent_docker);
+  lv_obj_set_size(sub_menu_page_3, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(sub_menu_page_3, 4 * SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_style_pad_all(sub_menu_page_3, 0, 0);
+  lv_obj_set_style_border_width(sub_menu_page_3, 0, 0);
+  lv_obj_set_scrollbar_mode(sub_menu_page_3, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(sub_menu_page_3);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+
+  // Create sub menu page4
+  sub_menu_page_4 = lv_obj_create(parent_docker);
+  lv_obj_set_size(sub_menu_page_4, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(sub_menu_page_4, 5 * SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_style_pad_all(sub_menu_page_4, 0, 0);
+  lv_obj_set_style_border_width(sub_menu_page_4, 0, 0);
+  lv_obj_set_scrollbar_mode(sub_menu_page_4, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(sub_menu_page_4);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+
+  // Create sub menu page5
+  sub_menu_page_5 = lv_obj_create(parent_docker);
+  lv_obj_set_size(sub_menu_page_5, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(sub_menu_page_5, 6 * SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_style_pad_all(sub_menu_page_5, 0, 0);
+  lv_obj_set_style_border_width(sub_menu_page_5, 0, 0);
+  lv_obj_set_scrollbar_mode(sub_menu_page_5, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(sub_menu_page_5);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create sub menu page0 clone
+  sub_menu_page_0_clone = lv_obj_create(parent_docker);
+  lv_obj_set_size(sub_menu_page_0_clone, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(sub_menu_page_0_clone, 7 * SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_style_pad_all(sub_menu_page_0_clone, 0, 0);
+  lv_obj_set_style_border_width(sub_menu_page_0_clone, 0, 0);
+  lv_obj_set_scrollbar_mode(sub_menu_page_0_clone, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(sub_menu_page_0_clone);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+
+  // Create g_sub_menu_pages array
+  g_sub_menu_pages[SUB_MENU_PAGE_BEGIN] = sub_menu_page_5_clone;
+  g_sub_menu_pages[SUB_MENU_PAGE_0]     = sub_menu_page_0;
+  g_sub_menu_pages[SUB_MENU_PAGE_1]     = sub_menu_page_1;
+  g_sub_menu_pages[SUB_MENU_PAGE_2]     = sub_menu_page_2;
+  g_sub_menu_pages[SUB_MENU_PAGE_3]     = sub_menu_page_3;
+  g_sub_menu_pages[SUB_MENU_PAGE_4]     = sub_menu_page_4;
+  g_sub_menu_pages[SUB_MENU_PAGE_5]     = sub_menu_page_5;
+  g_sub_menu_pages[SUB_MENU_PAGE_END]   = sub_menu_page_0_clone;
   ////////////////////////////////////// clone setting menu page layout /////////////////////////////////////////////
   String title = "Settings";
   lv_color_t font_color = lv_color_hex(0xFFFFFF);
@@ -421,102 +562,6 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_text_color(lb_menu_title, font_color, LV_PART_MAIN); 
   lv_label_set_long_mode(lb_menu_title, LV_LABEL_LONG_DOT);
   lv_obj_align( lb_menu_title, LV_ALIGN_CENTER, 0,0); 
-  /*************************************** sub menu layout******************************************/
-  // Create sub menu page0  
-  sub_menu_page_0 = lv_obj_create(parent_docker);
-  lv_obj_set_size(sub_menu_page_0, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(sub_menu_page_0, 0, SCREEN_HEIGHT);
-  lv_obj_set_style_pad_all(sub_menu_page_0, 0, 0);
-  lv_obj_set_style_border_width(sub_menu_page_0, 0, 0);
-  lv_obj_set_scrollbar_mode(sub_menu_page_0, LV_SCROLLBAR_MODE_OFF); 
-  background_img_obj = lv_img_create(sub_menu_page_0);
-  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
-  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-
-  // Create sub menu page1
-  sub_menu_page_1 = lv_obj_create(parent_docker);
-  lv_obj_set_size(sub_menu_page_1, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(sub_menu_page_1, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_style_pad_all(sub_menu_page_1, 0, 0);
-  lv_obj_set_style_border_width(sub_menu_page_1, 0, 0);
-  lv_obj_set_scrollbar_mode(sub_menu_page_1, LV_SCROLLBAR_MODE_OFF); 
-  background_img_obj = lv_img_create(sub_menu_page_1);
-  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
-  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-
-
-  // Create sub menu page2
-  sub_menu_page_2 = lv_obj_create(parent_docker);
-  lv_obj_set_size(sub_menu_page_2, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(sub_menu_page_2, 2 * SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_style_pad_all(sub_menu_page_2, 0, 0);
-  lv_obj_set_style_border_width(sub_menu_page_2, 0, 0);
-  lv_obj_set_scrollbar_mode(sub_menu_page_2, LV_SCROLLBAR_MODE_OFF); 
-  background_img_obj = lv_img_create(sub_menu_page_2);
-  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
-  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-
-
-  // Create sub menu page3
-  sub_menu_page_3 = lv_obj_create(parent_docker);
-  lv_obj_set_size(sub_menu_page_3, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(sub_menu_page_3, 3 * SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_style_pad_all(sub_menu_page_3, 0, 0);
-  lv_obj_set_style_border_width(sub_menu_page_3, 0, 0);
-  lv_obj_set_scrollbar_mode(sub_menu_page_3, LV_SCROLLBAR_MODE_OFF); 
-  background_img_obj = lv_img_create(sub_menu_page_3);
-  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
-  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-
-
-  // Create sub menu page4
-  sub_menu_page_4 = lv_obj_create(parent_docker);
-  lv_obj_set_size(sub_menu_page_4, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(sub_menu_page_4, 4 * SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_style_pad_all(sub_menu_page_4, 0, 0);
-  lv_obj_set_style_border_width(sub_menu_page_4, 0, 0);
-  lv_obj_set_scrollbar_mode(sub_menu_page_4, LV_SCROLLBAR_MODE_OFF); 
-  background_img_obj = lv_img_create(sub_menu_page_4);
-  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
-  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-
-
-  // Create sub menu page5
-  sub_menu_page_5 = lv_obj_create(parent_docker);
-  lv_obj_set_size(sub_menu_page_5, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(sub_menu_page_5, 5 * SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_style_pad_all(sub_menu_page_5, 0, 0);
-  lv_obj_set_style_border_width(sub_menu_page_5, 0, 0);
-  lv_obj_set_scrollbar_mode(sub_menu_page_5, LV_SCROLLBAR_MODE_OFF); 
-  background_img_obj = lv_img_create(sub_menu_page_5);
-  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
-  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-
-  // Create sub menu page6
-  sub_menu_page_6 = lv_obj_create(parent_docker);
-  lv_obj_set_size(sub_menu_page_6, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(sub_menu_page_6, 6 * SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_style_pad_all(sub_menu_page_6, 0, 0);
-  lv_obj_set_style_border_width(sub_menu_page_6, 0, 0);
-  lv_obj_set_scrollbar_mode(sub_menu_page_6, LV_SCROLLBAR_MODE_OFF); 
-  background_img_obj = lv_img_create(sub_menu_page_6);
-  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
-  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
-
-  // Create g_sub_menu_pages array
-  g_sub_menu_pages[SUB_MENU_PAGE_0] = sub_menu_page_0;
-  g_sub_menu_pages[SUB_MENU_PAGE_1] = sub_menu_page_1;
-  g_sub_menu_pages[SUB_MENU_PAGE_2] = sub_menu_page_2;
-  g_sub_menu_pages[SUB_MENU_PAGE_3] = sub_menu_page_3;
-  g_sub_menu_pages[SUB_MENU_PAGE_4] = sub_menu_page_4;
-  g_sub_menu_pages[SUB_MENU_PAGE_5] = sub_menu_page_5;
 }
 
 static void ui_update_loading_string(String str, uint32_t color, bool prgress_update) {
@@ -590,9 +635,16 @@ static void ui_clock_page_refresh(){
 
 
 
-static void ui_switch_to_page(uint8_t page, bool anim){
-  g_menu_page_index = page;
-  lv_obj_scroll_to_view(g_menu_pages[g_menu_page_index], anim ? LV_ANIM_ON : LV_ANIM_OFF);
+static void ui_switch_to_page(ui_state_t *ustate, bool anim){
+  if(ustate == NULL) return;
+  if(ustate->current_screen_type == MENU_SCREEN){
+    lv_obj_scroll_to_view(g_menu_pages[ustate->menu_page_index], anim ? LV_ANIM_ON : LV_ANIM_OFF);
+    LOG_W("Switch to menu page: %d", ustate->menu_page_index);
+  }
+  else if(ustate->current_screen_type == SUB_MENU_SCREEN){
+    lv_obj_scroll_to_view(g_sub_menu_pages[ustate->sub_menu_page_index], anim ? LV_ANIM_ON : LV_ANIM_OFF);
+    LOG_W("Switch to sub menu page: %d", ustate->sub_menu_page_index);
+  }
 }
 
 static void ui_refresh_thread(void *args){
@@ -605,48 +657,94 @@ static void ui_refresh_thread(void *args){
     delay(1000);
 
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
-      // if(g_menu_page_index == MENU_PAGE_PRICE) ui_price_page_rank_refresh(g_nm.coin_price_rank);
-      // else if(g_menu_page_index == MENU_PAGE_CLOCK) ui_clock_page_refresh();
-      //release mutex
-      xSemaphoreGive(lvgl_xMutex); 
+        //release mutex
+        xSemaphoreGive(lvgl_xMutex); 
     }
-    
-    if(TFT_BL!=-1){
-      if(g_nm.screen.sleep_timeout > 0){
-        int cycle = (g_nm.screen.sleep_timeout - g_nm.screen.cnt);
-        cycle = cycle > 0 ? cycle : 0;
-        uint8_t full = (uint8_t)(((float)g_nm.screen.brightness/100.0f) * 255);//
-        cycle = cycle * full / g_nm.screen.sleep_timeout;
-        tft_bl_ctrl((float)cycle / 255.0f);
-        g_nm.screen.active = cycle > 0;
-      }else {
-        tft_bl_ctrl((float)(g_nm.screen.brightness/100.0f));
-      }
+
+    if(g_nm.screen.sleep_timeout > 0){
+      int cycle = (g_nm.screen.sleep_timeout - g_nm.screen.cnt);
+      cycle = cycle > 0 ? cycle : 0;
+      uint8_t full = (uint8_t)(((float)g_nm.screen.brightness/100.0f) * 255);//
+      cycle = cycle * full / g_nm.screen.sleep_timeout;
+      tft_bl_ctrl((float)cycle / 255.0f);
+      g_nm.screen.active = cycle > 0;
+    }else {
+      tft_bl_ctrl((float)(g_nm.screen.brightness/100.0f));
     }
   }
 }
 
 void ui_switch_next_page_cb(){
-  g_menu_page_index++;
-  ui_switch_to_page(g_menu_page_index, true);
-  if(g_menu_page_index == MENU_PAGE_END){
-      g_menu_page_index = MENU_PAGE_PRICE;        //reset to loading page
-      delay(1000);                                //wait for the page to switch
-      ui_switch_to_page(g_menu_page_index, false);
-      LOG_W("Switch to first page, index reset to %d", g_menu_page_index);
+  if(g_ui_state.current_screen_type == MENU_SCREEN){
+    g_ui_state.menu_page_index++;
+    ui_switch_to_page(&g_ui_state, true);
+    if(g_ui_state.menu_page_index == MENU_PAGE_END){
+      g_ui_state.menu_page_index = MENU_PAGE_PRICE;
+      delay(1000);
+      ui_switch_to_page(&g_ui_state, false);
+    }
+  }
+  else if(g_ui_state.current_screen_type == SUB_MENU_SCREEN){
+    g_ui_state.sub_menu_page_index++;
+    ui_switch_to_page(&g_ui_state, true);
+    if(g_ui_state.sub_menu_page_index == SUB_MENU_PAGE_END){
+      g_ui_state.sub_menu_page_index = SUB_MENU_PAGE_0;
+      delay(1000);
+      ui_switch_to_page(&g_ui_state, false);
+    }
   }
 }
 
+
+
+
 void ui_switch_previous_page_cb(){
-  g_menu_page_index--;
-  ui_switch_to_page(g_menu_page_index, true);
-  if(g_menu_page_index == MENU_PAGE_BEGIN){
-      g_menu_page_index = MENU_PAGE_SETTINGS;        //reset to loading page
-      delay(1000);                                   //wait for the page to switch
-      ui_switch_to_page(g_menu_page_index, false);
-      LOG_W("Switch to end page, index reset to %d", g_menu_page_index);
+ if(g_ui_state.current_screen_type == MENU_SCREEN){
+    g_ui_state.menu_page_index--;
+    ui_switch_to_page(&g_ui_state, true);
+    if(g_ui_state.menu_page_index == MENU_PAGE_BEGIN){
+      g_ui_state.menu_page_index = MENU_PAGE_SETTINGS;
+      delay(1000);
+      ui_switch_to_page(&g_ui_state, false);
+    }
+  }
+  else if(g_ui_state.current_screen_type == SUB_MENU_SCREEN){
+    g_ui_state.sub_menu_page_index--;
+    ui_switch_to_page(&g_ui_state, true);
+    if(g_ui_state.sub_menu_page_index == SUB_MENU_PAGE_BEGIN){
+      g_ui_state.sub_menu_page_index = SUB_MENU_PAGE_5;
+      delay(1000);
+      ui_switch_to_page(&g_ui_state, false);
+    }
   }
 }
+
+
+void ui_enter_or_exit_current_page_cb(){
+  // if(ui_state.current_screen_type == SUB_MENU_SCREEN){
+  //   ui_switch_to_page(ui_state.menu_page_index, true);
+  // }
+  // else if(ui_state.current_screen_type == MENU_SCREEN){
+  //   ui_switch_to_page(ui_state.sub_menu_page_index, true);
+  // }
+  // else {
+  //   LOG_E("Unknown screen type: %d", ui_state.current_screen_type);
+  // }
+  // ui_state.current_screen_type = (ui_state.current_screen_type == MENU_SCREEN) ? SUB_MENU_SCREEN : MENU_SCREEN;
+
+  if(g_ui_state.current_screen_type == MENU_SCREEN){
+    g_ui_state.current_screen_type = SUB_MENU_SCREEN;
+    g_ui_state.sub_menu_page_index = SUB_MENU_PAGE_0;
+    ui_switch_to_page(&g_ui_state, true);
+  }
+  else if(g_ui_state.current_screen_type == SUB_MENU_SCREEN){
+    g_ui_state.current_screen_type = MENU_SCREEN;
+    g_ui_state.menu_page_index = MENU_PAGE_PRICE;
+    ui_switch_to_page(&g_ui_state, true);
+  }
+}
+
+
 
 
 static void lvgl_log_cb(const char * buf){
@@ -685,7 +783,7 @@ void display_thread(void *args){
   ui_working_page_layout_init();
 
   /***************************************switch to main page*************************************/
-  ui_switch_to_page(MENU_PAGE_PRICE, true);
+  ui_switch_to_page(&g_ui_state, true);
   vTaskDelete(NULL);
 }
 #endif //TFT_DISPLAY
