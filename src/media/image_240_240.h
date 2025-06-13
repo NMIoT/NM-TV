@@ -248,7 +248,7 @@ const LV_ATTRIBUTE_MEM_ALIGN uint16_t menu_img_array[] PROGMEM = {
 
 
 
-const lv_img_dsc_t lv_menu_back_img = {
+const lv_img_dsc_t menu_back_img = {
     .header = {
         .cf = LV_IMG_CF_TRUE_COLOR,
         .always_zero = 0,
