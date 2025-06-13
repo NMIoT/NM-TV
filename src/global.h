@@ -17,15 +17,15 @@
 #define LvglTaskCore      1
 #define UiRefreshTaskCore 1
 #define UiTaskCore        1
-#define BtnTaskCore       0
-#define MarketTaskCore    0
+#define BtnTaskCore       1
+#define ApiTaskCore       0
 #define MonitorTaskCore   1
 
 enum{
     // lowest priority
     TASK_PRIORITY_BTN = 1, 
     TASK_PRIORITY_MONITOR, 
-    TASK_PRIORITY_MARKET,
+    TASK_PRIORITY_API,
     TASK_PRIORITY_CONNECT, 
     TASK_PRIORITY_LED, 
     TASK_PRIORITY_CONFIG_MONITOR,
@@ -245,6 +245,6 @@ typedef struct{
 }nm_sal_t;
 
 extern nm_sal_t g_nm;
-extern TaskHandle_t task_btn, task_ui, task_market, task_monitor, task_lvgl_tick, task_ui_refresh;
+extern TaskHandle_t task_btn, task_ui, task_nmapi, task_monitor, task_lvgl_tick, task_ui_refresh;
 
 #endif // GLOBAL_H

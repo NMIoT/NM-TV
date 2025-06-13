@@ -25,21 +25,21 @@ void button_thread_entry(void *args){
   // free(name);
 
   tbtn.attachClick([](){ 
-    LOG_W("single click detected");
+    LOG_D("single click detected");
     ui_switch_next_page_cb();
   });
   tbtn.attachDoubleClick([](){ 
-    LOG_W("double click detected");
-    ui_switch_previous_page_cb();
+    LOG_D("double click detected");
+    ui_switch_prev_page_cb();
   });
   tbtn.attachLongPress([](){ 
-    LOG_W("long press detected");
+    LOG_D("long press detected");
     ui_enter_or_exit_current_page_cb();
   });
 
 
   while (true){
     tbtn.tick();
-    delay(40);
+    delay(20);
   }
 }

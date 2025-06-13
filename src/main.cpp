@@ -11,7 +11,7 @@
 #include "helper.h"
 
 static String  taskName = "";
-TaskHandle_t   task_btn = NULL, task_api = NULL, task_monitor = NULL, task_lvgl_tick = NULL, task_ui_refresh = NULL;
+TaskHandle_t   task_btn = NULL, task_nmapi = NULL, task_monitor = NULL, task_lvgl_tick = NULL, task_ui_refresh = NULL;
 nm_sal_t       g_nm;
 
 void setup() {
@@ -89,10 +89,10 @@ void setup() {
       LOG_W("Timezone calibrate to : %.1f, Latitude: %.6f, Longitude: %.6f", g_nm.location.tz_offest, g_nm.location.coord.lat, g_nm.location.coord.lon);
   }
   delete tz;
-  // /************************************************************** CREATE MARKET THREAD ***************************************************/
-  // taskName = "(nmapi)";
-  // xTaskCreatePinnedToCore(nmapi_thread_entry, taskName.c_str(), 1024*8, (void*)taskName.c_str(), TASK_PRIORITY_MARKET, &task_api, MarketTaskCore);
-  // delay(50);
+  /************************************************************** CREATE MARKET THREAD ***************************************************/
+  taskName = "(nmapi)";
+  xTaskCreatePinnedToCore(nmapi_thread_entry, taskName.c_str(), 1024*8, (void*)taskName.c_str(), TASK_PRIORITY_API, &task_nmapi, ApiTaskCore);
+  delay(50);
   /************************************************************** CREATE MONITOR THREAD ***************************************************/
   taskName = "(monitor)";
   xTaskCreatePinnedToCore(monitor_thread_entry, taskName.c_str(), 1024*3, (void*)taskName.c_str(), TASK_PRIORITY_MONITOR, &task_monitor, MonitorTaskCore);

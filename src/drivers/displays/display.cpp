@@ -45,8 +45,8 @@ static lv_color_t          *lvgl_color_buf = NULL;
 static lv_disp_draw_buf_t   draw_buf;
 static SemaphoreHandle_t    lvgl_xMutex;
 static lv_obj_t *parent_docker = NULL;
-static lv_obj_t *g_menu_pages[MENU_PAGE_END] = {NULL,},
-                *g_sub_menu_pages[SUB_MENU_PAGE_END] = {NULL,};
+static lv_obj_t *menu_pages[MENU_PAGE_END] = {NULL,},
+                *sub_menu_pages[SUB_MENU_PAGE_END] = {NULL,};
 static lv_obj_t  *clone_setting_menu_page = NULL, 
                  *price_menu_page = NULL,
                  *weather_menu_page = NULL,
@@ -65,12 +65,15 @@ static lv_obj_t  *sub_menu_page_5_clone = NULL,
                  *sub_menu_page_0_clone = NULL;
 
 typedef struct{
-  int menu_page_index; // current menu page index
-  int sub_menu_page_index; // current sub menu page index
-  screen_type_t current_screen_type; // current screen type, MENU_SCREEN or SUB_MENU_SCREEN
+  int menu_page_index;                // current menu page index
+  int sub_menu_page_index;            // current sub menu page index
+  screen_type_t current_screen_type;  // current screen type, MENU_SCREEN or SUB_MENU_SCREEN
+  SemaphoreHandle_t       next_page_xsem; // semaphore for next page
+  SemaphoreHandle_t       prev_page_xsem; // semaphore for previous page
+  SemaphoreHandle_t       ok_cancel_xsem; // semaphore for ok or cancel action
 }ui_state_t;
 
-ui_state_t g_ui_state = {
+ui_state_t ui_state = {
   .menu_page_index          = MENU_PAGE_PRICE,
   .sub_menu_page_index      = SUB_MENU_PAGE_0,
   .current_screen_type      = MENU_SCREEN,
@@ -192,6 +195,14 @@ static void ui_init(void){
   disp_drv.flush_cb = disp_flush;
   disp_drv.draw_buf = &draw_buf;
   lv_disp_drv_register( &disp_drv );
+
+  //ui_state_t init
+  ui_state.menu_page_index = MENU_PAGE_PRICE;
+  ui_state.sub_menu_page_index = SUB_MENU_PAGE_0;
+  ui_state.current_screen_type = MENU_SCREEN;
+  ui_state.next_page_xsem = xSemaphoreCreateCounting(1, 0);
+  ui_state.prev_page_xsem = xSemaphoreCreateCounting(1, 0);
+  ui_state.ok_cancel_xsem = xSemaphoreCreateCounting(1, 0);
 }
 
 static void ui_boot_page_layout_init(void){
@@ -222,9 +233,6 @@ static void ui_boot_page_layout_init(void){
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
   // display loading menu page
   lv_obj_scroll_to_view(boot_menu_page, LV_ANIM_OFF);
-
-
-
 
   String title = "Boot...";
   lv_color_t font_color = lv_color_hex(0xFFFFFF);
@@ -351,27 +359,27 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
-  // Create g_menu_pages array
-  g_menu_pages[MENU_PAGE_BEGIN]        = clone_setting_menu_page;
-  g_menu_pages[MENU_PAGE_PRICE]        = price_menu_page;
-  g_menu_pages[MENU_PAGE_WEATHER]      = weather_menu_page; 
-  g_menu_pages[MENU_PAGE_CLOCK]        = clock_menu_page; 
-  g_menu_pages[MENU_PAGE_IDEA]         = idea_menu_page;
-  g_menu_pages[MENU_PAGE_ALBUM]        = album_menu_page;
-  g_menu_pages[MENU_PAGE_SETTINGS]     = settings_menu_page;
-  g_menu_pages[MENU_PAGE_END]          = clone_price_menu_page;   // clone first page to the end for easy access
+  // Create menu_pages array
+  menu_pages[MENU_PAGE_BEGIN]        = clone_setting_menu_page;
+  menu_pages[MENU_PAGE_PRICE]        = price_menu_page;
+  menu_pages[MENU_PAGE_WEATHER]      = weather_menu_page; 
+  menu_pages[MENU_PAGE_CLOCK]        = clock_menu_page; 
+  menu_pages[MENU_PAGE_IDEA]         = idea_menu_page;
+  menu_pages[MENU_PAGE_ALBUM]        = album_menu_page;
+  menu_pages[MENU_PAGE_SETTINGS]     = settings_menu_page;
+  menu_pages[MENU_PAGE_END]          = clone_price_menu_page;   // clone first page to the end for easy access
 
 
 
 /*************************************** sub menu layout******************************************/
   // Create sub menu page5 clone
-  sub_menu_page_0 = lv_obj_create(parent_docker);
-  lv_obj_set_size(sub_menu_page_0, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_pos(sub_menu_page_0, 0, SCREEN_HEIGHT);
-  lv_obj_set_style_pad_all(sub_menu_page_0, 0, 0);
-  lv_obj_set_style_border_width(sub_menu_page_0, 0, 0);
-  lv_obj_set_scrollbar_mode(sub_menu_page_0, LV_SCROLLBAR_MODE_OFF); 
-  background_img_obj = lv_img_create(sub_menu_page_0);
+  sub_menu_page_5_clone = lv_obj_create(parent_docker);
+  lv_obj_set_size(sub_menu_page_5_clone, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_pos(sub_menu_page_5_clone, 0, SCREEN_HEIGHT);
+  lv_obj_set_style_pad_all(sub_menu_page_5_clone, 0, 0);
+  lv_obj_set_style_border_width(sub_menu_page_5_clone, 0, 0);
+  lv_obj_set_scrollbar_mode(sub_menu_page_5_clone, LV_SCROLLBAR_MODE_OFF); 
+  background_img_obj = lv_img_create(sub_menu_page_5_clone);
   lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
@@ -464,15 +472,15 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
-  // Create g_sub_menu_pages array
-  g_sub_menu_pages[SUB_MENU_PAGE_BEGIN] = sub_menu_page_5_clone;
-  g_sub_menu_pages[SUB_MENU_PAGE_0]     = sub_menu_page_0;
-  g_sub_menu_pages[SUB_MENU_PAGE_1]     = sub_menu_page_1;
-  g_sub_menu_pages[SUB_MENU_PAGE_2]     = sub_menu_page_2;
-  g_sub_menu_pages[SUB_MENU_PAGE_3]     = sub_menu_page_3;
-  g_sub_menu_pages[SUB_MENU_PAGE_4]     = sub_menu_page_4;
-  g_sub_menu_pages[SUB_MENU_PAGE_5]     = sub_menu_page_5;
-  g_sub_menu_pages[SUB_MENU_PAGE_END]   = sub_menu_page_0_clone;
+  // Create sub_menu_pages array
+  sub_menu_pages[SUB_MENU_PAGE_BEGIN] = sub_menu_page_5_clone;
+  sub_menu_pages[SUB_MENU_PAGE_0]     = sub_menu_page_0;
+  sub_menu_pages[SUB_MENU_PAGE_1]     = sub_menu_page_1;
+  sub_menu_pages[SUB_MENU_PAGE_2]     = sub_menu_page_2;
+  sub_menu_pages[SUB_MENU_PAGE_3]     = sub_menu_page_3;
+  sub_menu_pages[SUB_MENU_PAGE_4]     = sub_menu_page_4;
+  sub_menu_pages[SUB_MENU_PAGE_5]     = sub_menu_page_5;
+  sub_menu_pages[SUB_MENU_PAGE_END]   = sub_menu_page_0_clone;
   ////////////////////////////////////// clone setting menu page layout /////////////////////////////////////////////
   String title = "Settings";
   lv_color_t font_color = lv_color_hex(0xFFFFFF);
@@ -572,7 +580,7 @@ static void ui_update_loading_string(String str, uint32_t color, bool prgress_up
 static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
   // https://s2.coinmarketcap.com/static/img/coins/32x32/1.png
   if(map.empty()) return;
-  if(g_menu_pages[MENU_PAGE_PRICE] == NULL) return;
+  if(menu_pages[MENU_PAGE_PRICE] == NULL) return;
 
   static const uint8_t rank_max = 7; // Maximum number of coins to display
   static lv_img_dsc_t coin_icon_img_dsc[rank_max];
@@ -634,17 +642,16 @@ static void ui_clock_page_refresh(){
 }
 
 
+void ui_switch_next_page_cb(){
+  xSemaphoreGive(ui_state.next_page_xsem);
+}
 
-static void ui_switch_to_page(ui_state_t *ustate, bool anim){
-  if(ustate == NULL) return;
-  if(ustate->current_screen_type == MENU_SCREEN){
-    lv_obj_scroll_to_view(g_menu_pages[ustate->menu_page_index], anim ? LV_ANIM_ON : LV_ANIM_OFF);
-    LOG_W("Switch to menu page: %d", ustate->menu_page_index);
-  }
-  else if(ustate->current_screen_type == SUB_MENU_SCREEN){
-    lv_obj_scroll_to_view(g_sub_menu_pages[ustate->sub_menu_page_index], anim ? LV_ANIM_ON : LV_ANIM_OFF);
-    LOG_W("Switch to sub menu page: %d", ustate->sub_menu_page_index);
-  }
+void ui_switch_prev_page_cb(){
+  xSemaphoreGive(ui_state.prev_page_xsem);
+}
+
+void ui_enter_or_exit_current_page_cb(){
+  xSemaphoreGive(ui_state.ok_cancel_xsem);
 }
 
 static void ui_refresh_thread(void *args){
@@ -657,6 +664,66 @@ static void ui_refresh_thread(void *args){
     delay(1000);
 
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
+      // circle menu page scroll
+      static uint32_t circle_tick_start = millis();
+      if((ui_state.current_screen_type == MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_END) && (millis() - circle_tick_start >= 1000)){
+        ui_state.menu_page_index = MENU_PAGE_PRICE;
+        lv_obj_scroll_to_view(menu_pages[ui_state.menu_page_index], LV_ANIM_OFF);
+      }
+      if((ui_state.current_screen_type == MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_BEGIN) && (millis() - circle_tick_start >= 1000)){
+        ui_state.menu_page_index = MENU_PAGE_SETTINGS;
+        lv_obj_scroll_to_view(menu_pages[ui_state.menu_page_index], LV_ANIM_OFF);
+
+      }
+      // check if the next or previous page or ok/cancel button is pressed
+      if(xSemaphoreTake(ui_state.next_page_xsem, 0) == pdTRUE){
+        if(ui_state.current_screen_type == MENU_SCREEN){
+          lv_obj_scroll_to_view(menu_pages[++ui_state.menu_page_index], LV_ANIM_ON);
+          if(ui_state.menu_page_index == MENU_PAGE_END) circle_tick_start = millis();//wait for a second before scrolling back to the first page
+        }
+        else if(ui_state.current_screen_type == SUB_MENU_SCREEN){
+       
+        }
+      }
+      if(xSemaphoreTake(ui_state.prev_page_xsem, 0) == pdTRUE){
+        if(ui_state.current_screen_type == MENU_SCREEN){
+          lv_obj_scroll_to_view(menu_pages[--ui_state.menu_page_index], LV_ANIM_ON);
+          if(ui_state.menu_page_index == MENU_PAGE_BEGIN) circle_tick_start = millis();//wait for a second before scrolling back to the first page
+        }
+        else if(ui_state.current_screen_type == SUB_MENU_SCREEN){
+       
+        }
+      }
+      if(xSemaphoreTake(ui_state.ok_cancel_xsem, 0) == pdTRUE){
+        if(ui_state.current_screen_type == MENU_SCREEN){
+
+        }else if(ui_state.current_screen_type == SUB_MENU_SCREEN){
+
+        }
+
+
+
+
+      } 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         //release mutex
         xSemaphoreGive(lvgl_xMutex); 
     }
@@ -674,75 +741,7 @@ static void ui_refresh_thread(void *args){
   }
 }
 
-void ui_switch_next_page_cb(){
-  if(g_ui_state.current_screen_type == MENU_SCREEN){
-    g_ui_state.menu_page_index++;
-    ui_switch_to_page(&g_ui_state, true);
-    if(g_ui_state.menu_page_index == MENU_PAGE_END){
-      g_ui_state.menu_page_index = MENU_PAGE_PRICE;
-      delay(1000);
-      ui_switch_to_page(&g_ui_state, false);
-    }
-  }
-  else if(g_ui_state.current_screen_type == SUB_MENU_SCREEN){
-    g_ui_state.sub_menu_page_index++;
-    ui_switch_to_page(&g_ui_state, true);
-    if(g_ui_state.sub_menu_page_index == SUB_MENU_PAGE_END){
-      g_ui_state.sub_menu_page_index = SUB_MENU_PAGE_0;
-      delay(1000);
-      ui_switch_to_page(&g_ui_state, false);
-    }
-  }
-}
 
-
-
-
-void ui_switch_previous_page_cb(){
- if(g_ui_state.current_screen_type == MENU_SCREEN){
-    g_ui_state.menu_page_index--;
-    ui_switch_to_page(&g_ui_state, true);
-    if(g_ui_state.menu_page_index == MENU_PAGE_BEGIN){
-      g_ui_state.menu_page_index = MENU_PAGE_SETTINGS;
-      delay(1000);
-      ui_switch_to_page(&g_ui_state, false);
-    }
-  }
-  else if(g_ui_state.current_screen_type == SUB_MENU_SCREEN){
-    g_ui_state.sub_menu_page_index--;
-    ui_switch_to_page(&g_ui_state, true);
-    if(g_ui_state.sub_menu_page_index == SUB_MENU_PAGE_BEGIN){
-      g_ui_state.sub_menu_page_index = SUB_MENU_PAGE_5;
-      delay(1000);
-      ui_switch_to_page(&g_ui_state, false);
-    }
-  }
-}
-
-
-void ui_enter_or_exit_current_page_cb(){
-  // if(ui_state.current_screen_type == SUB_MENU_SCREEN){
-  //   ui_switch_to_page(ui_state.menu_page_index, true);
-  // }
-  // else if(ui_state.current_screen_type == MENU_SCREEN){
-  //   ui_switch_to_page(ui_state.sub_menu_page_index, true);
-  // }
-  // else {
-  //   LOG_E("Unknown screen type: %d", ui_state.current_screen_type);
-  // }
-  // ui_state.current_screen_type = (ui_state.current_screen_type == MENU_SCREEN) ? SUB_MENU_SCREEN : MENU_SCREEN;
-
-  if(g_ui_state.current_screen_type == MENU_SCREEN){
-    g_ui_state.current_screen_type = SUB_MENU_SCREEN;
-    g_ui_state.sub_menu_page_index = SUB_MENU_PAGE_0;
-    ui_switch_to_page(&g_ui_state, true);
-  }
-  else if(g_ui_state.current_screen_type == SUB_MENU_SCREEN){
-    g_ui_state.current_screen_type = MENU_SCREEN;
-    g_ui_state.menu_page_index = MENU_PAGE_PRICE;
-    ui_switch_to_page(&g_ui_state, true);
-  }
-}
 
 
 
@@ -783,7 +782,8 @@ void display_thread(void *args){
   ui_working_page_layout_init();
 
   /***************************************switch to main page*************************************/
-  ui_switch_to_page(&g_ui_state, true);
+  // ui_switch_to_page(&ui_state, true);
+  lv_obj_scroll_to_view(price_menu_page, LV_ANIM_ON);
   vTaskDelete(NULL);
 }
 #endif //TFT_DISPLAY
