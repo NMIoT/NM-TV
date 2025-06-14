@@ -1,6 +1,4 @@
 #include "global.h"
-
-#if defined(TFT_DISPLAY) || defined(AMOLED_DISPLAY)
 #include "display.h"
 #include "logger.h"
 #include "lvgl.h"
@@ -198,7 +196,10 @@ page_refresh_func_t refresh_table[SUB_MENU_PAGE_END + 1][MENU_PAGE_END + 1] = {
 static const lv_font_t *lb_menu_title_font         = &lv_font_montserrat_34;
 static const lv_font_t *lb_price_rank_font         = &lv_font_montserrat_34;
 static const lv_font_t *lb_coin_name_detail_font   = &lv_font_montserrat_34;
-static const lv_font_t *lb_coin_price_detail_font  = &lv_font_montserrat_24;
+static const lv_font_t *lb_coin_price_detail_font  = &lv_font_montserrat_38;
+static const lv_font_t *lb_coin_price_change_1h_font = &lv_font_montserrat_16;
+static const lv_font_t *lb_coin_price_change_24h_font = &lv_font_montserrat_16;
+static const lv_font_t *lb_coin_price_last_updated_font = &lv_font_montserrat_16;
 
 
 
@@ -291,7 +292,7 @@ static void lvgl_tick_task(void *args){
 
 static void ui_init(void){
   LOG_I("lvgl version: %s", (String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch()).c_str());
-  const uint32_t color_buf_size = SCREEN_WIDTH * SCREEN_HEIGHT / 5;
+  const uint32_t color_buf_size = SCREEN_WIDTH * SCREEN_HEIGHT / 10;
   lvgl_color_buf = (lv_color_t*)malloc(color_buf_size * sizeof(lv_color_t));
 
   if(lvgl_color_buf == NULL){
@@ -680,10 +681,6 @@ static void ui_working_page_layout_init(void){
   lv_obj_align( lb_menu_title, LV_ALIGN_CENTER, 0,0); 
 }
 
-static void ui_update_loading_string(String str, uint32_t color, bool prgress_update) {
-
-}
-
 
 static void ui_price_rank_summary_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page){
   // https://s2.coinmarketcap.com/static/img/coins/32x32/1.png
@@ -756,8 +753,7 @@ static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin
   static lv_obj_t* lb_crypto_coin_price[rank_max] = {NULL,};
   static lv_obj_t* lb_crypto_coin_change_1h[rank_max] = {NULL,};
   static lv_obj_t* lb_crypto_coin_change_24h[rank_max] = {NULL,};
-  static lv_obj_t* lb_crypto_coin_change_7d[rank_max] = {NULL,};
-  static lv_obj_t* lb_crypto_coin_desc[rank_max] = {NULL,};
+  static lv_obj_t* lb_crypto_coin_price_last_update[rank_max] = {NULL,};
   lv_coord_t width = 0;
 
 
@@ -807,24 +803,79 @@ static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin
   }
   if(lb_crypto_coin_price[index] == NULL) {
       lb_crypto_coin_price[index] = lv_label_create(page);
-      lv_color_t font_color = lv_color_hex(0xFFFFFF);
+      lv_color_t font_color = lv_color_hex(0x00FF00);
       String price_str = "$" + String(coin.price.realtime, 1);
       width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), lb_coin_price_detail_font, 0, LV_TEXT_FLAG_NONE);
       lv_obj_set_width(lb_crypto_coin_price[index], width);
       lv_label_set_text(lb_crypto_coin_price[index], price_str.c_str());
       lv_obj_set_style_text_color(lb_crypto_coin_price[index], font_color, LV_PART_MAIN); 
       lv_obj_set_style_text_font(lb_crypto_coin_price[index], lb_coin_price_detail_font, 0);
-      lv_obj_align(lb_crypto_coin_price[index], LV_ALIGN_TOP_LEFT, 0, 40);
+      lv_obj_align(lb_crypto_coin_price[index], LV_ALIGN_CENTER, 0, -40);
+  }
+  if(lb_crypto_coin_change_1h[index] == NULL) {
+      lb_crypto_coin_change_1h[index] = lv_label_create(page);
+      lv_color_t font_color = lv_color_hex(0xFFFFFF);
+      String change_1h_str = String(coin.price.percent_change_1h, 2) + "% (1h)";
+      width = lv_txt_get_width(change_1h_str.c_str(), strlen(change_1h_str.c_str()), lb_coin_price_change_1h_font, 0, LV_TEXT_FLAG_NONE);
+      lv_obj_set_width(lb_crypto_coin_change_1h[index], width);
+      lv_label_set_text(lb_crypto_coin_change_1h[index], change_1h_str.c_str());
+      lv_obj_set_style_text_color(lb_crypto_coin_change_1h[index], font_color, LV_PART_MAIN); 
+      lv_obj_set_style_text_font(lb_crypto_coin_change_1h[index], lb_coin_price_change_1h_font, 0);
+      lv_obj_align(lb_crypto_coin_change_1h[index], LV_ALIGN_TOP_LEFT, 0, 105);
+  }
+  if(lb_crypto_coin_change_24h[index] == NULL) {
+      lb_crypto_coin_change_24h[index] = lv_label_create(page);
+      lv_color_t font_color = lv_color_hex(0xFFFFFF);
+      String change_24h_str = String(coin.price.percent_change_24h, 2) + "% (24h)";
+      width = lv_txt_get_width(change_24h_str.c_str(), strlen(change_24h_str.c_str()), lb_coin_price_change_24h_font, 0, LV_TEXT_FLAG_NONE);
+      lv_obj_set_width(lb_crypto_coin_change_24h[index], width);
+      lv_label_set_text(lb_crypto_coin_change_24h[index], change_24h_str.c_str());
+      lv_obj_set_style_text_color(lb_crypto_coin_change_24h[index], font_color, LV_PART_MAIN); 
+      lv_obj_set_style_text_font(lb_crypto_coin_change_24h[index], lb_coin_price_change_24h_font, 0);
+      lv_obj_align(lb_crypto_coin_change_24h[index], LV_ALIGN_TOP_RIGHT, 0, 105);
+  }
+  if(lb_crypto_coin_price_last_update[index] == NULL) {
+      lb_crypto_coin_price_last_update[index] = lv_label_create(page);
+      lv_color_t font_color = lv_color_hex(0xFFFFFF);
+      String last_update_str = coin.price.last_updated;
+      width = lv_txt_get_width(last_update_str.c_str(), strlen(last_update_str.c_str()), lb_coin_price_last_updated_font, 0, LV_TEXT_FLAG_NONE);
+      lv_obj_set_width(lb_crypto_coin_price_last_update[index], width);
+      lv_label_set_text(lb_crypto_coin_price_last_update[index], last_update_str.c_str());
+      lv_obj_set_style_text_color(lb_crypto_coin_price_last_update[index], font_color, LV_PART_MAIN); 
+      lv_obj_set_style_text_font(lb_crypto_coin_price_last_update[index], lb_coin_price_last_updated_font, 0);
+      lv_obj_align(lb_crypto_coin_price_last_update[index], LV_ALIGN_BOTTOM_RIGHT, 0, 0);
   }
 
 
+  //update price label
+  String price_str = "$" + String(coin.price.realtime, 1);
+  width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), lb_coin_price_detail_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_crypto_coin_price[index], width);
+  lv_label_set_text(lb_crypto_coin_price[index], price_str.c_str());
 
+  //update change labels
+  String change_1h_str = String(coin.price.percent_change_1h, 2) + "% (1h)";
+  width = lv_txt_get_width(change_1h_str.c_str(), strlen(change_1h_str.c_str()), lb_coin_price_change_1h_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_crypto_coin_change_1h[index], width);
+  lv_label_set_text(lb_crypto_coin_change_1h[index], change_1h_str.c_str());
 
+  String change_24h_str = String(coin.price.percent_change_24h, 2) + "% (24h)";
+  width = lv_txt_get_width(change_24h_str.c_str(), strlen(change_24h_str.c_str()), lb_coin_price_change_24h_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_crypto_coin_change_24h[index], width);
+  lv_label_set_text(lb_crypto_coin_change_24h[index], change_24h_str.c_str());
 
-
-
-
-
+  // Set text color based on change 1h values
+  if(coin.price.percent_change_1h < 0) {
+      lv_obj_set_style_text_color(lb_crypto_coin_change_1h[index], lv_color_hex(0xFF0000), LV_PART_MAIN); // Red for negative change
+  } else {
+      lv_obj_set_style_text_color(lb_crypto_coin_change_1h[index], lv_color_hex(0x00FF00), LV_PART_MAIN); // Green for positive change
+  }
+  // Set text color based on change 1h values
+  if(coin.price.percent_change_24h < 0) {
+      lv_obj_set_style_text_color(lb_crypto_coin_change_24h[index], lv_color_hex(0xFF0000), LV_PART_MAIN); // Red for negative change
+  } else {
+      lv_obj_set_style_text_color(lb_crypto_coin_change_24h[index], lv_color_hex(0x00FF00), LV_PART_MAIN); // Green for positive change
+  }
 }
 
 
@@ -993,4 +1044,3 @@ void display_thread(void *args){
   lv_obj_scroll_to_view(price_menu_page, LV_ANIM_ON);
   vTaskDelete(NULL);
 }
-#endif //TFT_DISPLAY

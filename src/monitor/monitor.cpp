@@ -26,7 +26,7 @@ void monitor_thread_entry(void *args){
     uint32_t m_cnt = 0;
 
     ntpClient.begin();
-    ntpClient.setTimeOffset(g_nm.location.tz_offest * 3600.0f); // Set timezone offset in hours
+    ntpClient.setTimeOffset((int)(g_nm.location.tz_offest * 3600)); // Set timezone offset in hours
     ntpClient.setUpdateInterval(ntpInterval);
 
     while(true){
@@ -65,7 +65,7 @@ void monitor_thread_entry(void *args){
             continue;
         }
 
-        LOG_D("Free memory: %.3fkB, time : %s" , ESP.getFreeHeap() / 1024.0f, convert_time_to_local(g_nm.location.timestamp).c_str());
+        LOG_W("Free memory: %.3fkB, time : %s" , ESP.getFreeHeap() / 1024.0f, convert_time_to_local(g_nm.location.timestamp).c_str());
     }
     LOG_W("%s thread exit", __FUNCTION__);
     delay(1000);
