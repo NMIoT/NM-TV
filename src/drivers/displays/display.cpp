@@ -82,11 +82,124 @@ ui_state_t ui_state = {
 
 
 
+static void ui_price_rank_summary_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page);
+static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page);
+
+
+
+typedef void (*page_refresh_func_t)(void);
+page_refresh_func_t refresh_table[SUB_MENU_PAGE_END + 1][MENU_PAGE_END + 1] = {
+    // clone page
+    {
+      NULL, 
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL
+    },
+    // SUB_MENU_PAGE_0
+    { 
+      NULL, 
+      [](){ ui_price_rank_summary_refresh(g_nm.coin_price_rank, sub_menu_page_0); }, // MENU_PAGE_PRICE
+      [](){ /* weather refresh */ }, // MENU_PAGE_WEATHER
+      [](){ /* clock refresh */ }, // MENU_PAGE_CLOCK
+      [](){ /* idea refresh */ }, // MENU_PAGE_IDEA
+      [](){ /* album refresh */ }, // MENU_PAGE_ALBUM
+      [](){ /* settings refresh */ }, // MENU_PAGE_SETTINGS
+      NULL, 
+    },
+    // SUB_MENU_PAGE_1
+    { 
+      NULL, 
+      [](){ ui_price_rank_details_refresh(g_nm.coin_price_rank, sub_menu_page_1); }, // MENU_PAGE_PRICE
+      [](){ /* weather refresh */ }, // MENU_PAGE_WEATHER
+      [](){ /* clock refresh */ }, // MENU_PAGE_CLOCK
+      [](){ /* idea refresh */ }, // MENU_PAGE_IDEA
+      [](){ /* album refresh */ }, // MENU_PAGE_ALBUM
+      [](){ /* settings refresh */ }, // MENU_PAGE_SETTINGS
+      NULL, 
+    },
+    // SUB_MENU_PAGE_2
+    { 
+      NULL, 
+      [](){ ui_price_rank_details_refresh(g_nm.coin_price_rank, sub_menu_page_2); }, // MENU_PAGE_PRICE
+      [](){ /* weather refresh */ }, // MENU_PAGE_WEATHER
+      [](){ /* clock refresh */ }, // MENU_PAGE_CLOCK
+      [](){ /* idea refresh */ }, // MENU_PAGE_IDEA
+      [](){ /* album refresh */ }, // MENU_PAGE_ALBUM
+      [](){ /* settings refresh */ }, // MENU_PAGE_SETTINGS
+      NULL, 
+    },
+    // SUB_MENU_PAGE_3
+    { 
+      NULL, 
+      [](){ ui_price_rank_details_refresh(g_nm.coin_price_rank, sub_menu_page_3); }, // MENU_PAGE_PRICE
+      [](){ /* weather refresh */ }, // MENU_PAGE_WEATHER
+      [](){ /* clock refresh */ }, // MENU_PAGE_CLOCK
+      [](){ /* idea refresh */ }, // MENU_PAGE_IDEA
+      [](){ /* album refresh */ }, // MENU_PAGE_ALBUM
+      [](){ /* settings refresh */ }, // MENU_PAGE_SETTINGS
+      NULL, 
+    },
+    // SUB_MENU_PAGE_4
+    { 
+      NULL, 
+      [](){ ui_price_rank_details_refresh(g_nm.coin_price_rank, sub_menu_page_4); }, // MENU_PAGE_PRICE
+      [](){ /* weather refresh */ }, // MENU_PAGE_WEATHER
+      [](){ /* clock refresh */ }, // MENU_PAGE_CLOCK
+      [](){ /* idea refresh */ }, // MENU_PAGE_IDEA
+      [](){ /* album refresh */ }, // MENU_PAGE_ALBUM
+      [](){ /* settings refresh */ }, // MENU_PAGE_SETTINGS
+      NULL, 
+    },
+    // SUB_MENU_PAGE_5
+    { 
+      NULL, 
+      [](){ ui_price_rank_details_refresh(g_nm.coin_price_rank, sub_menu_page_5); }, // MENU_PAGE_PRICE
+      [](){ /* weather refresh */ }, // MENU_PAGE_WEATHER
+      [](){ /* clock refresh */ }, // MENU_PAGE_CLOCK
+      [](){ /* idea refresh */ }, // MENU_PAGE_IDEA
+      [](){ /* album refresh */ }, // MENU_PAGE_ALBUM
+      [](){ /* settings refresh */ }, // MENU_PAGE_SETTINGS
+      NULL, 
+    },
+    // clone page
+    {
+      NULL, 
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL
+    },
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #include "image_240_240.h"
 // LV_FONT_DECLARE(ds_digib_font_10)
 // LV_FONT_DECLARE(symbol_10)
-static const lv_font_t *lb_price_rank_font = &lv_font_montserrat_34;
-static const lv_font_t *lb_menu_title_font = &lv_font_montserrat_34;
+static const lv_font_t *lb_menu_title_font         = &lv_font_montserrat_34;
+static const lv_font_t *lb_price_rank_font         = &lv_font_montserrat_34;
+static const lv_font_t *lb_coin_name_detail_font   = &lv_font_montserrat_34;
+static const lv_font_t *lb_coin_price_detail_font  = &lv_font_montserrat_24;
+
 
 
 static int blpwmChannel = 0;  
@@ -565,100 +678,6 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_text_color(lb_menu_title, font_color, LV_PART_MAIN); 
   lv_label_set_long_mode(lb_menu_title, LV_LABEL_LONG_DOT);
   lv_obj_align( lb_menu_title, LV_ALIGN_CENTER, 0,0); 
-
-
-
-
-
-  ////////////////////////////////////// sub menu page 5 clone layout //////////////////////////////////////
-  title = "page 5";
-  font_color = lv_color_hex(0xFFFFFF);
-  width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
-  lv_obj_t *lb_sub_menu_title  = lv_label_create(sub_menu_page_5_clone);
-  lv_obj_set_width(lb_sub_menu_title, width);
-  lv_label_set_text( lb_sub_menu_title, title.c_str());
-  lv_obj_set_style_text_font(lb_sub_menu_title, lb_menu_title_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_sub_menu_title, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_sub_menu_title, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_sub_menu_title, LV_ALIGN_CENTER, 0,0); 
-  ////////////////////////////////////// sub menu page 0 layout /////////////////////////////////////////////
-  title = "page 0";
-  font_color = lv_color_hex(0xFFFFFF);
-  width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
-  lb_sub_menu_title  = lv_label_create(sub_menu_page_0);
-  lv_obj_set_width(lb_sub_menu_title, width);
-  lv_label_set_text( lb_sub_menu_title, title.c_str());
-  lv_obj_set_style_text_font(lb_sub_menu_title, lb_menu_title_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_sub_menu_title, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_sub_menu_title, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_sub_menu_title, LV_ALIGN_CENTER, 0,0); 
-  ////////////////////////////////////// sub menu page 1 layout /////////////////////////////////////////////
-  title = "page 1";
-  font_color = lv_color_hex(0xFFFFFF);
-  width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
-  lb_sub_menu_title  = lv_label_create(sub_menu_page_1);
-  lv_obj_set_width(lb_sub_menu_title, width);
-  lv_label_set_text( lb_sub_menu_title, title.c_str());
-  lv_obj_set_style_text_font(lb_sub_menu_title, lb_menu_title_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_sub_menu_title, font_color, LV_PART_MAIN);
-  lv_label_set_long_mode(lb_sub_menu_title, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_sub_menu_title, LV_ALIGN_CENTER, 0,0);
-  ////////////////////////////////////// sub menu page 2 layout /////////////////////////////////////////////
-  title = "page 2";
-  font_color = lv_color_hex(0xFFFFFF);
-  width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
-  lb_sub_menu_title  = lv_label_create(sub_menu_page_2);
-  lv_obj_set_width(lb_sub_menu_title, width);
-  lv_label_set_text( lb_sub_menu_title, title.c_str());
-  lv_obj_set_style_text_font(lb_sub_menu_title, lb_menu_title_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_sub_menu_title, font_color, LV_PART_MAIN);
-  lv_label_set_long_mode(lb_sub_menu_title, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_sub_menu_title, LV_ALIGN_CENTER, 0,0);
-  ////////////////////////////////////// sub menu page 3 layout /////////////////////////////////////////////
-  title = "page 3";
-  font_color = lv_color_hex(0xFFFFFF);
-  width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
-  lb_sub_menu_title  = lv_label_create(sub_menu_page_3);
-  lv_obj_set_width(lb_sub_menu_title, width);
-  lv_label_set_text( lb_sub_menu_title, title.c_str());
-  lv_obj_set_style_text_font(lb_sub_menu_title, lb_menu_title_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_sub_menu_title, font_color, LV_PART_MAIN);
-  lv_label_set_long_mode(lb_sub_menu_title, LV_LABEL_LONG_DOT);
-
-  lv_obj_align( lb_sub_menu_title, LV_ALIGN_CENTER, 0,0);
-  ////////////////////////////////////// sub menu page 4 layout /////////////////////////////////////////////
-  title = "page 4";
-  font_color = lv_color_hex(0xFFFFFF);
-  width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
-  lb_sub_menu_title  = lv_label_create(sub_menu_page_4);
-  lv_obj_set_width(lb_sub_menu_title, width);
-  lv_label_set_text( lb_sub_menu_title, title.c_str());
-  lv_obj_set_style_text_font(lb_sub_menu_title, lb_menu_title_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_sub_menu_title, font_color, LV_PART_MAIN);
-  lv_label_set_long_mode(lb_sub_menu_title, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_sub_menu_title, LV_ALIGN_CENTER, 0,0);
-  ////////////////////////////////////// sub menu page 5 layout /////////////////////////////////////////////
-  title = "page 5";
-  font_color = lv_color_hex(0xFFFFFF);
-  width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
-  lb_sub_menu_title  = lv_label_create(sub_menu_page_5);
-  lv_obj_set_width(lb_sub_menu_title, width);
-  lv_label_set_text( lb_sub_menu_title, title.c_str());
-  lv_obj_set_style_text_font(lb_sub_menu_title, lb_menu_title_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_sub_menu_title, font_color, LV_PART_MAIN);
-  lv_label_set_long_mode(lb_sub_menu_title, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_sub_menu_title, LV_ALIGN_CENTER, 0,0);
-  ////////////////////////////////////// sub menu page 0 clone layout /////////////////////////////////////////////
-  title = "page 0";
-  font_color = lv_color_hex(0xFFFFFF);
-  width = lv_txt_get_width(title.c_str(), strlen(title.c_str()), lb_menu_title_font, 0, LV_TEXT_FLAG_NONE);
-  lb_sub_menu_title  = lv_label_create(sub_menu_page_0_clone);
-  lv_obj_set_width(lb_sub_menu_title, width);
-  lv_label_set_text( lb_sub_menu_title, title.c_str());
-  lv_obj_set_style_text_font(lb_sub_menu_title, lb_menu_title_font, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lb_sub_menu_title, font_color, LV_PART_MAIN); 
-  lv_label_set_long_mode(lb_sub_menu_title, LV_LABEL_LONG_DOT);
-  lv_obj_align( lb_sub_menu_title, LV_ALIGN_CENTER, 0,0); 
 }
 
 static void ui_update_loading_string(String str, uint32_t color, bool prgress_update) {
@@ -666,11 +685,10 @@ static void ui_update_loading_string(String str, uint32_t color, bool prgress_up
 }
 
 
-static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
+static void ui_price_rank_summary_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page){
   // https://s2.coinmarketcap.com/static/img/coins/32x32/1.png
-  if(map.empty()) return;
-  if(menu_pages[MENU_PAGE_PRICE] == NULL) return;
-
+  if(coin_price_rank.empty()) return;
+  if(page == NULL) return;
   static const uint8_t rank_max = 7; // Maximum number of coins to display
   static lv_img_dsc_t coin_icon_img_dsc[rank_max];
   static lv_obj_t* icon_png_list[rank_max] = {NULL,};
@@ -680,11 +698,11 @@ static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
   for(uint8_t i = 0; i < rank_max; i++) {
       //create or update the icon image
       if(icon_png_list[i] == NULL) {
-          icon_png_list[i] = lv_img_create(price_menu_page);
+          icon_png_list[i] = lv_img_create(page);
           lv_obj_align(icon_png_list[i], LV_ALIGN_TOP_LEFT, 0, i * 33 + 2);
       }
       if(lb_crypto_coin_price[i] == NULL) {
-          lb_crypto_coin_price[i] = lv_label_create(price_menu_page);
+          lb_crypto_coin_price[i] = lv_label_create(page);
           lv_color_t font_color = lv_color_hex(0xFFFFFF);
           lv_obj_set_width(lb_crypto_coin_price[i], SCREEN_WIDTH);
           lv_label_set_text(lb_crypto_coin_price[i], "");
@@ -695,7 +713,7 @@ static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
   }
 
   // Sort the map by price in descending order
-  std::vector<std::pair<ccoin_name, ccoin_node>> sorted_vec(map.begin(), map.end());
+  std::vector<std::pair<ccoin_name, ccoin_node>> sorted_vec(coin_price_rank.begin(), coin_price_rank.end());
   std::sort(sorted_vec.begin(), sorted_vec.end(),
       [](const std::pair<ccoin_name, ccoin_node>& a, const std::pair<ccoin_name, ccoin_node>& b) {
           return a.second.price.realtime > b.second.price.realtime; 
@@ -725,6 +743,94 @@ static void ui_price_page_rank_refresh(std::map<ccoin_name, ccoin_node> &map){
       index++;
   }
 }
+
+static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page){
+  if(coin_price_rank.empty()) return;
+  if(page == NULL) return;
+
+
+  static const uint8_t rank_max = 5; // Maximum number of coins to display
+  static lv_img_dsc_t coin_icon_img_dsc[rank_max];
+  static lv_obj_t* icon_png_list[rank_max] = {NULL,};
+  static lv_obj_t* lb_crypto_coin_name[rank_max] = {NULL,};
+  static lv_obj_t* lb_crypto_coin_price[rank_max] = {NULL,};
+  static lv_obj_t* lb_crypto_coin_change_1h[rank_max] = {NULL,};
+  static lv_obj_t* lb_crypto_coin_change_24h[rank_max] = {NULL,};
+  static lv_obj_t* lb_crypto_coin_change_7d[rank_max] = {NULL,};
+  static lv_obj_t* lb_crypto_coin_desc[rank_max] = {NULL,};
+  lv_coord_t width = 0;
+
+
+
+  // Sort the map by price in descending order
+  std::vector<std::pair<ccoin_name, ccoin_node>> sorted_vec(coin_price_rank.begin(), coin_price_rank.end());
+  std::sort(sorted_vec.begin(), sorted_vec.end(),
+      [](const std::pair<ccoin_name, ccoin_node>& a, const std::pair<ccoin_name, ccoin_node>& b) {
+          return a.second.price.realtime > b.second.price.realtime; 
+      }
+  );
+
+  ccoin_node coin;
+  int index = -1;
+  if(page == sub_menu_page_1)index = 0;
+  else if(page == sub_menu_page_2)index = 1;
+  else if(page == sub_menu_page_3)index = 2;
+  else if(page == sub_menu_page_4)index = 3;
+  else if(page == sub_menu_page_5)index = 4;
+  else {LOG_E("Unknown page for price rank details refresh"); return;}
+
+  coin = sorted_vec[index].second; // Get the first coin for sub_menu_page_0
+
+  coin_icon_img_dsc[index].header.cf = LV_IMG_CF_RAW_ALPHA;
+  coin_icon_img_dsc[index].header.w = 0; //auto width
+  coin_icon_img_dsc[index].header.h = 0; //auto height
+  coin_icon_img_dsc[index].header.always_zero = 0;
+  coin_icon_img_dsc[index].header.reserved = 0;
+  coin_icon_img_dsc[index].data_size = coin.icon.size;
+  coin_icon_img_dsc[index].data      = (const uint8_t *)(coin.icon.addr);
+
+
+  if(icon_png_list[index] == NULL) {
+      icon_png_list[index] = lv_img_create(page);
+      lv_obj_align(icon_png_list[index], LV_ALIGN_TOP_LEFT, 0, 3);
+      lv_img_set_src(icon_png_list[index], &coin_icon_img_dsc[index]);
+  }
+  if(lb_crypto_coin_name[index] == NULL) {
+      lb_crypto_coin_name[index] = lv_label_create(page);
+      lv_color_t font_color = lv_color_hex(0xFFFFFF);
+      width = lv_txt_get_width(coin.name.c_str(), strlen(coin.name.c_str()), lb_coin_name_detail_font, 0, LV_TEXT_FLAG_NONE);
+      lv_obj_set_width(lb_crypto_coin_name[index], width);
+      lv_label_set_text(lb_crypto_coin_name[index], coin.name.c_str());
+      lv_obj_set_style_text_color(lb_crypto_coin_name[index], font_color, LV_PART_MAIN); 
+      lv_obj_set_style_text_font(lb_crypto_coin_name[index], lb_coin_name_detail_font, 0);
+      lv_obj_align(lb_crypto_coin_name[index], LV_ALIGN_TOP_MID, 0, 0);
+  }
+  if(lb_crypto_coin_price[index] == NULL) {
+      lb_crypto_coin_price[index] = lv_label_create(page);
+      lv_color_t font_color = lv_color_hex(0xFFFFFF);
+      String price_str = "$" + String(coin.price.realtime, 1);
+      width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), lb_coin_price_detail_font, 0, LV_TEXT_FLAG_NONE);
+      lv_obj_set_width(lb_crypto_coin_price[index], width);
+      lv_label_set_text(lb_crypto_coin_price[index], price_str.c_str());
+      lv_obj_set_style_text_color(lb_crypto_coin_price[index], font_color, LV_PART_MAIN); 
+      lv_obj_set_style_text_font(lb_crypto_coin_price[index], lb_coin_price_detail_font, 0);
+      lv_obj_align(lb_crypto_coin_price[index], LV_ALIGN_TOP_LEFT, 0, 40);
+  }
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
 
 static void ui_clock_page_refresh(){
 
@@ -819,11 +925,12 @@ static void ui_refresh_thread(void *args){
       
       
       
-      
-      
-      
-      
-      
+      //refresh current sub menu page
+      if(ui_state.current_screen_type == SUB_MENU_SCREEN) {
+          auto func = refresh_table[ui_state.sub_menu_page_index][ui_state.menu_page_index];
+          if(func) func();
+      }
+
       //release mutex
       xSemaphoreGive(lvgl_xMutex); 
     }
