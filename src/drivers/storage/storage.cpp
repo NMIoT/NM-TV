@@ -322,7 +322,14 @@ bool load_g_nm(void){
         g_nm.connection.client_connected     = false;
 
         g_nm.location.tz_offest              = 0;
-        
+        g_nm.global_xsem.coin_price_xsem        = xSemaphoreCreateCounting(1, 0);
+        g_nm.global_xsem.weather_realtime_xsem  = xSemaphoreCreateCounting(1, 0);
+        g_nm.global_xsem.weather_forecast_xsem  = xSemaphoreCreateCounting(1, 0);
+        g_nm.global_xsem.air_pollution_xsem     = xSemaphoreCreateCounting(1, 0);
+        g_nm.global_xsem.next_page_xsem         = xSemaphoreCreateCounting(1, 0);
+        g_nm.global_xsem.prev_page_xsem         = xSemaphoreCreateCounting(1, 0);
+        g_nm.global_xsem.ok_cancel_xsem         = xSemaphoreCreateCounting(1, 0);
+    
         g_nm.need_cfg                        = nvs_config_get_u8(NMTV_SETTINGS_NAMESPACE, JSON_SPIFFS_KEY_NEED_CFG, false);
         
         nvs_init_flag = true;

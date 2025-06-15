@@ -64,18 +64,16 @@ static lv_obj_t  *sub_menu_page_5_clone = NULL,
                  *sub_menu_page_0_clone = NULL;
 
 typedef struct{
-  int menu_page_index;                // current menu page index
-  int sub_menu_page_index;            // current sub menu page index
-  screen_type_t current_screen_type;  // current screen type, MENU_SCREEN or SUB_MENU_SCREEN
-  SemaphoreHandle_t       next_page_xsem; // semaphore for next page
-  SemaphoreHandle_t       prev_page_xsem; // semaphore for previous page
-  SemaphoreHandle_t       ok_cancel_xsem; // semaphore for ok or cancel action
+  bool                    sub_page_inited[SUB_MENU_PAGE_END + 1];      // whether the UI layout is initialized
+  int                     menu_page_index;      // current menu page index
+  int                     sub_menu_page_index;  // current sub menu page index
+  screen_type_t           current_screen_type;  // current screen type, MENU_SCREEN or SUB_MENU_SCREEN
 }ui_state_t;
 
 ui_state_t ui_state = {
   .menu_page_index          = MENU_PAGE_PRICE,
   .sub_menu_page_index      = SUB_MENU_PAGE_0,
-  .current_screen_type      = MENU_SCREEN,
+  .current_screen_type      = MENU_SCREEN
 };
 
 
@@ -310,14 +308,6 @@ static void ui_init(void){
   disp_drv.flush_cb = disp_flush;
   disp_drv.draw_buf = &draw_buf;
   lv_disp_drv_register( &disp_drv );
-
-  //ui_state_t init
-  ui_state.menu_page_index = MENU_PAGE_PRICE;
-  ui_state.sub_menu_page_index = SUB_MENU_PAGE_0;
-  ui_state.current_screen_type = MENU_SCREEN;
-  ui_state.next_page_xsem = xSemaphoreCreateCounting(1, 0);
-  ui_state.prev_page_xsem = xSemaphoreCreateCounting(1, 0);
-  ui_state.ok_cancel_xsem = xSemaphoreCreateCounting(1, 0);
 }
 
 static void ui_boot_page_layout_init(void){
@@ -482,7 +472,7 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_border_width(sub_menu_page_5_clone, 0, 0);
   lv_obj_set_scrollbar_mode(sub_menu_page_5_clone, LV_SCROLLBAR_MODE_OFF); 
   background_img_obj = lv_img_create(sub_menu_page_5_clone);
-  lv_img_set_src(background_img_obj, &menu_back_img);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
@@ -494,7 +484,7 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_border_width(sub_menu_page_0, 0, 0);
   lv_obj_set_scrollbar_mode(sub_menu_page_0, LV_SCROLLBAR_MODE_OFF); 
   background_img_obj = lv_img_create(sub_menu_page_0);
-  lv_img_set_src(background_img_obj, &menu_back_img);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
@@ -506,7 +496,7 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_border_width(sub_menu_page_1, 0, 0);
   lv_obj_set_scrollbar_mode(sub_menu_page_1, LV_SCROLLBAR_MODE_OFF); 
   background_img_obj = lv_img_create(sub_menu_page_1);
-  lv_img_set_src(background_img_obj, &menu_back_img);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
@@ -518,7 +508,7 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_border_width(sub_menu_page_2, 0, 0);
   lv_obj_set_scrollbar_mode(sub_menu_page_2, LV_SCROLLBAR_MODE_OFF); 
   background_img_obj = lv_img_create(sub_menu_page_2);
-  lv_img_set_src(background_img_obj, &menu_back_img);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
@@ -530,7 +520,7 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_border_width(sub_menu_page_3, 0, 0);
   lv_obj_set_scrollbar_mode(sub_menu_page_3, LV_SCROLLBAR_MODE_OFF); 
   background_img_obj = lv_img_create(sub_menu_page_3);
-  lv_img_set_src(background_img_obj, &menu_back_img);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
@@ -542,7 +532,7 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_border_width(sub_menu_page_4, 0, 0);
   lv_obj_set_scrollbar_mode(sub_menu_page_4, LV_SCROLLBAR_MODE_OFF); 
   background_img_obj = lv_img_create(sub_menu_page_4);
-  lv_img_set_src(background_img_obj, &menu_back_img);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
@@ -554,7 +544,7 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_border_width(sub_menu_page_5, 0, 0);
   lv_obj_set_scrollbar_mode(sub_menu_page_5, LV_SCROLLBAR_MODE_OFF); 
   background_img_obj = lv_img_create(sub_menu_page_5);
-  lv_img_set_src(background_img_obj, &menu_back_img);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
@@ -566,7 +556,7 @@ static void ui_working_page_layout_init(void){
   lv_obj_set_style_border_width(sub_menu_page_0_clone, 0, 0);
   lv_obj_set_scrollbar_mode(sub_menu_page_0_clone, LV_SCROLLBAR_MODE_OFF); 
   background_img_obj = lv_img_create(sub_menu_page_0_clone);
-  lv_img_set_src(background_img_obj, &menu_back_img);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
   lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 
@@ -681,6 +671,30 @@ static void ui_working_page_layout_init(void){
   lv_obj_align( lb_menu_title, LV_ALIGN_CENTER, 0,0); 
 }
 
+void ui_switch_next_page_cb(){
+  xSemaphoreGive(g_nm.global_xsem.next_page_xsem);
+}
+
+void ui_switch_prev_page_cb(){
+  xSemaphoreGive(g_nm.global_xsem.prev_page_xsem);
+}
+
+void ui_enter_or_exit_current_page_cb(){
+  xSemaphoreGive(g_nm.global_xsem.ok_cancel_xsem);
+}
+
+static void ui_sub_menu_page_obj_clear(lv_obj_t *page){
+  if(page == NULL) return;
+  // Clear all objects in the page
+  lv_obj_clean(page);
+  // Recreate the background image
+  lv_obj_t *background_img_obj = lv_img_create(page);
+  lv_img_set_src(background_img_obj, &lv_sub_menu_back_img);
+  lv_obj_set_size(background_img_obj, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
+}
+
+
 
 static void ui_price_rank_summary_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page){
   // https://s2.coinmarketcap.com/static/img/coins/32x32/1.png
@@ -691,23 +705,45 @@ static void ui_price_rank_summary_refresh(std::map<ccoin_name, ccoin_node> &coin
   static lv_obj_t* icon_png_list[rank_max] = {NULL,};
   static lv_obj_t* lb_crypto_coin_price[rank_max] = {NULL,};
 
-  // Initialize the icon image descriptors and labels if not already done
-  for(uint8_t i = 0; i < rank_max; i++) {
-      //create or update the icon image
-      if(icon_png_list[i] == NULL) {
-          icon_png_list[i] = lv_img_create(page);
-          lv_obj_align(icon_png_list[i], LV_ALIGN_TOP_LEFT, 0, i * 33 + 2);
-      }
-      if(lb_crypto_coin_price[i] == NULL) {
-          lb_crypto_coin_price[i] = lv_label_create(page);
-          lv_color_t font_color = lv_color_hex(0xFFFFFF);
-          lv_obj_set_width(lb_crypto_coin_price[i], SCREEN_WIDTH);
-          lv_label_set_text(lb_crypto_coin_price[i], "");
-          lv_obj_set_style_text_color(lb_crypto_coin_price[i], font_color, LV_PART_MAIN); 
-          lv_obj_set_style_text_font(lb_crypto_coin_price[i], lb_price_rank_font, 0);
-          lv_obj_align(lb_crypto_coin_price[i], LV_ALIGN_TOP_LEFT, 40, i * 33);
-      }
+  // Initialize the icon png list and price label list
+  if(!ui_state.sub_page_inited[SUB_MENU_PAGE_0]){
+    for(uint8_t i = 0; i < rank_max; i++) {
+        //create or update the icon image
+        ui_state.sub_page_inited[SUB_MENU_PAGE_0] = true; // assume all sub pages are inited
+        bool init = false;
+
+        icon_png_list[i] = lv_img_create(page);
+        init = (icon_png_list[i] != NULL);
+        ui_state.sub_page_inited[SUB_MENU_PAGE_0] = ui_state.sub_page_inited[SUB_MENU_PAGE_0] && init;//set init inactive if any icon image is not created successfully
+        if(!init) {
+            LOG_E("Failed to create icon_png_list[%d]", i);
+            continue;
+        }
+        lv_obj_align(icon_png_list[i], LV_ALIGN_TOP_LEFT, 0, i * 33 + 2);
+
+        //create the price label
+        lb_crypto_coin_price[i] = lv_label_create(page);
+        init = (lb_crypto_coin_price[i] != NULL);
+        ui_state.sub_page_inited[SUB_MENU_PAGE_0] = ui_state.sub_page_inited[SUB_MENU_PAGE_0] && init;//set init inactive if any label is not created successfully
+        if(!init) {
+            LOG_E("Failed to create lb_crypto_coin_price[%d]", i);
+            continue;
+        }
+        lv_color_t font_color = lv_color_hex(0xFFFFFF);
+        lv_obj_set_width(lb_crypto_coin_price[i], SCREEN_WIDTH);
+        lv_label_set_text(lb_crypto_coin_price[i], "");
+        lv_obj_set_style_text_color(lb_crypto_coin_price[i], font_color, LV_PART_MAIN); 
+        lv_obj_set_style_text_font(lb_crypto_coin_price[i], lb_price_rank_font, 0);
+        lv_obj_align(lb_crypto_coin_price[i], LV_ALIGN_TOP_LEFT, 40, i * 33);
+    }
+    LOG_I("Sub page %d initialized", SUB_MENU_PAGE_0);
   }
+
+  if(!ui_state.sub_page_inited[SUB_MENU_PAGE_0]) {
+      LOG_E("Sub page %d is not initialized", SUB_MENU_PAGE_0);
+      return;
+  }
+  
 
   // Sort the map by price in descending order
   std::vector<std::pair<ccoin_name, ccoin_node>> sorted_vec(coin_price_rank.begin(), coin_price_rank.end());
@@ -732,8 +768,18 @@ static void ui_price_rank_summary_refresh(std::map<ccoin_name, ccoin_node> &coin
       coin_icon_img_dsc[index].data      = (const uint8_t *)(coin.second.icon.addr);
       lv_img_set_src(icon_png_list[index], &coin_icon_img_dsc[index]);
 
+
+      int float_bits = 1;
+      if(coin.second.price.realtime > 0 && coin.second.price.realtime < 10) float_bits = 4;
+      else if(coin.second.price.realtime >= 10 && coin.second.price.realtime < 100) float_bits = 3;
+      else if(coin.second.price.realtime >= 100 && coin.second.price.realtime < 1000) float_bits = 2;
+      else if(coin.second.price.realtime >= 1000 && coin.second.price.realtime < 10000) float_bits = 1;
+      else if(coin.second.price.realtime >= 10000 && coin.second.price.realtime < 100000) float_bits = 0;
+      else float_bits = 1;
+
+
       //update coin price label
-      String price_str = "$" + String(coin.second.price.realtime, 1);
+      String price_str = "$" + String(coin.second.price.realtime, float_bits);
       lv_coord_t width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), lb_price_rank_font, 0, LV_TEXT_FLAG_NONE);
       lv_obj_set_width(lb_crypto_coin_price[index], width);
       lv_label_set_text_fmt(lb_crypto_coin_price[index], "%s", price_str);
@@ -767,16 +813,15 @@ static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin
   );
 
   ccoin_node coin;
-  int index = -1;
-  if(page == sub_menu_page_1)index = 0;
-  else if(page == sub_menu_page_2)index = 1;
-  else if(page == sub_menu_page_3)index = 2;
-  else if(page == sub_menu_page_4)index = 3;
-  else if(page == sub_menu_page_5)index = 4;
+  int index = -1, sub_page_index = -1;
+  if(page == sub_menu_page_1)     {index = 0; sub_page_index = 2;}
+  else if(page == sub_menu_page_2){index = 1; sub_page_index = 3;}
+  else if(page == sub_menu_page_3){index = 2; sub_page_index = 4;}
+  else if(page == sub_menu_page_4){index = 3; sub_page_index = 5;}
+  else if(page == sub_menu_page_5){index = 4; sub_page_index = 6;}
   else {LOG_E("Unknown page for price rank details refresh"); return;}
 
   coin = sorted_vec[index].second; // Get the first coin for sub_menu_page_0
-
   coin_icon_img_dsc[index].header.cf = LV_IMG_CF_RAW_ALPHA;
   coin_icon_img_dsc[index].header.w = 0; //auto width
   coin_icon_img_dsc[index].header.h = 0; //auto height
@@ -785,70 +830,121 @@ static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin
   coin_icon_img_dsc[index].data_size = coin.icon.size;
   coin_icon_img_dsc[index].data      = (const uint8_t *)(coin.icon.addr);
 
+  if(!ui_state.sub_page_inited[sub_page_index]){
+    ui_state.sub_page_inited[sub_page_index] = true; // assume all sub pages are inited
+    bool init = false;       
 
-  if(icon_png_list[index] == NULL) {
-      icon_png_list[index] = lv_img_create(page);
-      lv_obj_align(icon_png_list[index], LV_ALIGN_TOP_LEFT, 0, 3);
-      lv_img_set_src(icon_png_list[index], &coin_icon_img_dsc[index]);
+    //create icon image
+    icon_png_list[index] = lv_img_create(page);
+    init = (icon_png_list[index] != NULL);
+    ui_state.sub_page_inited[sub_page_index] = ui_state.sub_page_inited[sub_page_index] && init; //set init inactive if any icon image is not created successfully
+    if(!ui_state.sub_page_inited[sub_page_index]) {
+      LOG_E("Failed to create icon image for coin: %s", coin.name.c_str());
+      return;
+    }
+    lv_obj_align(icon_png_list[index], LV_ALIGN_TOP_LEFT, 0, 3);
+    lv_img_set_src(icon_png_list[index], &coin_icon_img_dsc[index]);
+
+    //create coin name label
+    lb_crypto_coin_name[index] = lv_label_create(page);
+    init = (lb_crypto_coin_name[index] != NULL);
+    ui_state.sub_page_inited[sub_page_index] = ui_state.sub_page_inited[sub_page_index] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[sub_page_index]) {
+      LOG_E("Failed to create coin name label for coin: %s", coin.name.c_str());
+      return;
+    }
+    lv_color_t font_color = lv_color_hex(0xFFFFFF);
+    width = lv_txt_get_width(coin.name.c_str(), strlen(coin.name.c_str()), lb_coin_name_detail_font, 0, LV_TEXT_FLAG_NONE);
+    lv_obj_set_width(lb_crypto_coin_name[index], width);
+    lv_label_set_text(lb_crypto_coin_name[index], coin.name.c_str());
+    lv_obj_set_style_text_color(lb_crypto_coin_name[index], font_color, LV_PART_MAIN); 
+    lv_obj_set_style_text_font(lb_crypto_coin_name[index], lb_coin_name_detail_font, 0);
+    lv_obj_align(lb_crypto_coin_name[index], LV_ALIGN_TOP_MID, 0, 0);
+
+    //create coin price label
+    lb_crypto_coin_price[index] = lv_label_create(page);
+    init = (lb_crypto_coin_price[index] != NULL);
+    ui_state.sub_page_inited[sub_page_index] = ui_state.sub_page_inited[sub_page_index] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[sub_page_index]) {
+      LOG_E("Failed to create coin price label for coin: %s", coin.name.c_str());
+      return;
+    }
+    font_color = lv_color_hex(0x00FF00);
+    String price_str = "$" + String(coin.price.realtime, 1);
+    width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), lb_coin_price_detail_font, 0, LV_TEXT_FLAG_NONE);
+    lv_obj_set_width(lb_crypto_coin_price[index], width);
+    lv_label_set_text(lb_crypto_coin_price[index], price_str.c_str());
+    lv_obj_set_style_text_color(lb_crypto_coin_price[index], font_color, LV_PART_MAIN); 
+    lv_obj_set_style_text_font(lb_crypto_coin_price[index], lb_coin_price_detail_font, 0);
+    lv_obj_align(lb_crypto_coin_price[index], LV_ALIGN_CENTER, 0, -40);
+
+    //create change labels
+    lb_crypto_coin_change_1h[index] = lv_label_create(page);
+    init = (lb_crypto_coin_change_1h[index] != NULL);
+    ui_state.sub_page_inited[sub_page_index] = ui_state.sub_page_inited[sub_page_index] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[sub_page_index]) {
+      LOG_E("Failed to create coin change 1h label for coin: %s", coin.name.c_str());
+      return;
+    }
+    font_color = lv_color_hex(0xFFFFFF);
+    String change_1h_str = String(coin.price.percent_change_1h, 2) + "% (1h)";
+    width = lv_txt_get_width(change_1h_str.c_str(), strlen(change_1h_str.c_str()), lb_coin_price_change_1h_font, 0, LV_TEXT_FLAG_NONE);
+    lv_obj_set_width(lb_crypto_coin_change_1h[index], width);
+    lv_label_set_text(lb_crypto_coin_change_1h[index], change_1h_str.c_str());
+    lv_obj_set_style_text_color(lb_crypto_coin_change_1h[index], font_color, LV_PART_MAIN); 
+    lv_obj_set_style_text_font(lb_crypto_coin_change_1h[index], lb_coin_price_change_1h_font, 0);
+    lv_obj_align(lb_crypto_coin_change_1h[index], LV_ALIGN_TOP_LEFT, 0, 105);
+
+    //create change 24h label
+    lb_crypto_coin_change_24h[index] = lv_label_create(page);
+    init = (lb_crypto_coin_change_24h[index] != NULL);
+    ui_state.sub_page_inited[sub_page_index] = ui_state.sub_page_inited[sub_page_index] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[sub_page_index]) {
+      LOG_E("Failed to create coin change 24h label for coin: %s", coin.name.c_str());
+      return;
+    }
+    font_color = lv_color_hex(0xFFFFFF);
+    String change_24h_str = String(coin.price.percent_change_24h, 2) + "% (24h)";
+    width = lv_txt_get_width(change_24h_str.c_str(), strlen(change_24h_str.c_str()), lb_coin_price_change_24h_font, 0, LV_TEXT_FLAG_NONE);
+    lv_obj_set_width(lb_crypto_coin_change_24h[index], width);
+    lv_label_set_text(lb_crypto_coin_change_24h[index], change_24h_str.c_str());
+    lv_obj_set_style_text_color(lb_crypto_coin_change_24h[index], font_color, LV_PART_MAIN); 
+    lv_obj_set_style_text_font(lb_crypto_coin_change_24h[index], lb_coin_price_change_24h_font, 0);
+    lv_obj_align(lb_crypto_coin_change_24h[index], LV_ALIGN_TOP_RIGHT, 0, 105);
+
+    //create last updated label
+    lb_crypto_coin_price_last_update[index] = lv_label_create(page);
+    init = (lb_crypto_coin_price_last_update[index] != NULL);
+    ui_state.sub_page_inited[sub_page_index] = ui_state.sub_page_inited[sub_page_index] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[sub_page_index]) {
+      LOG_E("Failed to create coin last updated label for coin: %s", coin.name.c_str());
+      return;
+    }
+    font_color = lv_color_hex(0xFFFFFF);
+    String last_update_str = coin.price.last_updated;
+    width = lv_txt_get_width(last_update_str.c_str(), strlen(last_update_str.c_str()), lb_coin_price_last_updated_font, 0, LV_TEXT_FLAG_NONE);
+    lv_obj_set_width(lb_crypto_coin_price_last_update[index], width);
+    lv_label_set_text(lb_crypto_coin_price_last_update[index], last_update_str.c_str());
+    lv_obj_set_style_text_color(lb_crypto_coin_price_last_update[index], font_color, LV_PART_MAIN); 
+    lv_obj_set_style_text_font(lb_crypto_coin_price_last_update[index], lb_coin_price_last_updated_font, 0);
+    lv_obj_align(lb_crypto_coin_price_last_update[index], LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+
+    LOG_I("sub page %d initialized", sub_page_index);
   }
-  if(lb_crypto_coin_name[index] == NULL) {
-      lb_crypto_coin_name[index] = lv_label_create(page);
-      lv_color_t font_color = lv_color_hex(0xFFFFFF);
-      width = lv_txt_get_width(coin.name.c_str(), strlen(coin.name.c_str()), lb_coin_name_detail_font, 0, LV_TEXT_FLAG_NONE);
-      lv_obj_set_width(lb_crypto_coin_name[index], width);
-      lv_label_set_text(lb_crypto_coin_name[index], coin.name.c_str());
-      lv_obj_set_style_text_color(lb_crypto_coin_name[index], font_color, LV_PART_MAIN); 
-      lv_obj_set_style_text_font(lb_crypto_coin_name[index], lb_coin_name_detail_font, 0);
-      lv_obj_align(lb_crypto_coin_name[index], LV_ALIGN_TOP_MID, 0, 0);
-  }
-  if(lb_crypto_coin_price[index] == NULL) {
-      lb_crypto_coin_price[index] = lv_label_create(page);
-      lv_color_t font_color = lv_color_hex(0x00FF00);
-      String price_str = "$" + String(coin.price.realtime, 1);
-      width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), lb_coin_price_detail_font, 0, LV_TEXT_FLAG_NONE);
-      lv_obj_set_width(lb_crypto_coin_price[index], width);
-      lv_label_set_text(lb_crypto_coin_price[index], price_str.c_str());
-      lv_obj_set_style_text_color(lb_crypto_coin_price[index], font_color, LV_PART_MAIN); 
-      lv_obj_set_style_text_font(lb_crypto_coin_price[index], lb_coin_price_detail_font, 0);
-      lv_obj_align(lb_crypto_coin_price[index], LV_ALIGN_CENTER, 0, -40);
-  }
-  if(lb_crypto_coin_change_1h[index] == NULL) {
-      lb_crypto_coin_change_1h[index] = lv_label_create(page);
-      lv_color_t font_color = lv_color_hex(0xFFFFFF);
-      String change_1h_str = String(coin.price.percent_change_1h, 2) + "% (1h)";
-      width = lv_txt_get_width(change_1h_str.c_str(), strlen(change_1h_str.c_str()), lb_coin_price_change_1h_font, 0, LV_TEXT_FLAG_NONE);
-      lv_obj_set_width(lb_crypto_coin_change_1h[index], width);
-      lv_label_set_text(lb_crypto_coin_change_1h[index], change_1h_str.c_str());
-      lv_obj_set_style_text_color(lb_crypto_coin_change_1h[index], font_color, LV_PART_MAIN); 
-      lv_obj_set_style_text_font(lb_crypto_coin_change_1h[index], lb_coin_price_change_1h_font, 0);
-      lv_obj_align(lb_crypto_coin_change_1h[index], LV_ALIGN_TOP_LEFT, 0, 105);
-  }
-  if(lb_crypto_coin_change_24h[index] == NULL) {
-      lb_crypto_coin_change_24h[index] = lv_label_create(page);
-      lv_color_t font_color = lv_color_hex(0xFFFFFF);
-      String change_24h_str = String(coin.price.percent_change_24h, 2) + "% (24h)";
-      width = lv_txt_get_width(change_24h_str.c_str(), strlen(change_24h_str.c_str()), lb_coin_price_change_24h_font, 0, LV_TEXT_FLAG_NONE);
-      lv_obj_set_width(lb_crypto_coin_change_24h[index], width);
-      lv_label_set_text(lb_crypto_coin_change_24h[index], change_24h_str.c_str());
-      lv_obj_set_style_text_color(lb_crypto_coin_change_24h[index], font_color, LV_PART_MAIN); 
-      lv_obj_set_style_text_font(lb_crypto_coin_change_24h[index], lb_coin_price_change_24h_font, 0);
-      lv_obj_align(lb_crypto_coin_change_24h[index], LV_ALIGN_TOP_RIGHT, 0, 105);
-  }
-  if(lb_crypto_coin_price_last_update[index] == NULL) {
-      lb_crypto_coin_price_last_update[index] = lv_label_create(page);
-      lv_color_t font_color = lv_color_hex(0xFFFFFF);
-      String last_update_str = coin.price.last_updated;
-      width = lv_txt_get_width(last_update_str.c_str(), strlen(last_update_str.c_str()), lb_coin_price_last_updated_font, 0, LV_TEXT_FLAG_NONE);
-      lv_obj_set_width(lb_crypto_coin_price_last_update[index], width);
-      lv_label_set_text(lb_crypto_coin_price_last_update[index], last_update_str.c_str());
-      lv_obj_set_style_text_color(lb_crypto_coin_price_last_update[index], font_color, LV_PART_MAIN); 
-      lv_obj_set_style_text_font(lb_crypto_coin_price_last_update[index], lb_coin_price_last_updated_font, 0);
-      lv_obj_align(lb_crypto_coin_price_last_update[index], LV_ALIGN_BOTTOM_RIGHT, 0, 0);
-  }
+
+
 
 
   //update price label
-  String price_str = "$" + String(coin.price.realtime, 1);
+   int float_bits = 1;
+  if(coin.price.realtime > 0 && coin.price.realtime < 1) float_bits = 4;
+  else if(coin.price.realtime >= 1 && coin.price.realtime < 100) float_bits = 3;
+  else if(coin.price.realtime >= 100 && coin.price.realtime < 1000) float_bits = 2;
+  else if(coin.price.realtime >= 1000 && coin.price.realtime < 10000) float_bits = 1;
+  else if(coin.price.realtime >= 10000 && coin.price.realtime < 100000) float_bits = 0;
+  else float_bits = 1;
+
+  String price_str = "$" + String(coin.price.realtime, float_bits);
   width = lv_txt_get_width(price_str.c_str(), strlen(price_str.c_str()), lb_coin_price_detail_font, 0, LV_TEXT_FLAG_NONE);
   lv_obj_set_width(lb_crypto_coin_price[index], width);
   lv_label_set_text(lb_crypto_coin_price[index], price_str.c_str());
@@ -864,56 +960,41 @@ static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin
   lv_obj_set_width(lb_crypto_coin_change_24h[index], width);
   lv_label_set_text(lb_crypto_coin_change_24h[index], change_24h_str.c_str());
 
+
+  // update last updated label
+  String last_update_str = coin.price.last_updated;
+  width = lv_txt_get_width(last_update_str.c_str(), strlen(last_update_str.c_str()), lb_coin_price_last_updated_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_crypto_coin_price_last_update[index], width);
+  lv_label_set_text(lb_crypto_coin_price_last_update[index], last_update_str.c_str());
+
+
+
   // Set text color based on change 1h values
   if(coin.price.percent_change_1h < 0) {
-      lv_obj_set_style_text_color(lb_crypto_coin_change_1h[index], lv_color_hex(0xFF0000), LV_PART_MAIN); // Red for negative change
+      lv_obj_set_style_text_color(lb_crypto_coin_change_1h[index], lv_color_hex(0x00FF00), LV_PART_MAIN); // Red for negative change
   } else {
-      lv_obj_set_style_text_color(lb_crypto_coin_change_1h[index], lv_color_hex(0x00FF00), LV_PART_MAIN); // Green for positive change
+      lv_obj_set_style_text_color(lb_crypto_coin_change_1h[index], lv_color_hex(0xFF0000), LV_PART_MAIN); // Green for positive change
   }
   // Set text color based on change 1h values
   if(coin.price.percent_change_24h < 0) {
-      lv_obj_set_style_text_color(lb_crypto_coin_change_24h[index], lv_color_hex(0xFF0000), LV_PART_MAIN); // Red for negative change
+      lv_obj_set_style_text_color(lb_crypto_coin_change_24h[index], lv_color_hex(0x00FF00), LV_PART_MAIN); // Red for negative change
   } else {
-      lv_obj_set_style_text_color(lb_crypto_coin_change_24h[index], lv_color_hex(0x00FF00), LV_PART_MAIN); // Green for positive change
+      lv_obj_set_style_text_color(lb_crypto_coin_change_24h[index], lv_color_hex(0xFF0000), LV_PART_MAIN); // Green for positive change
   }
 }
 
 
-
-
-
-
-static void ui_clock_page_refresh(){
-
-}
-
-
-void ui_switch_next_page_cb(){
-  xSemaphoreGive(ui_state.next_page_xsem);
-}
-
-void ui_switch_prev_page_cb(){
-  xSemaphoreGive(ui_state.prev_page_xsem);
-}
-
-void ui_enter_or_exit_current_page_cb(){
-  xSemaphoreGive(ui_state.ok_cancel_xsem);
-}
 
 static void ui_refresh_thread(void *args){
   char *name = (char*)malloc(20);
   strcpy(name, (char*)args);
   LOG_I("%s thread started on core %d...", name, xPortGetCoreID());
   free(name);
-
+  uint32_t circle_tick_start = millis(), last_api_tick_start[4] = {millis(), millis(), millis(), millis()};
   while (true){
     delay(100);
-
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
-
-
       // circle menu page scroll
-      static uint32_t circle_tick_start = millis();
       if((ui_state.current_screen_type == MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_END) && (millis() - circle_tick_start >= 1000)){
         ui_state.menu_page_index = MENU_PAGE_PRICE;
         lv_obj_scroll_to_view(menu_pages[ui_state.menu_page_index], LV_ANIM_OFF);
@@ -922,9 +1003,6 @@ static void ui_refresh_thread(void *args){
         ui_state.menu_page_index = MENU_PAGE_SETTINGS;
         lv_obj_scroll_to_view(menu_pages[ui_state.menu_page_index], LV_ANIM_OFF);
       }
-
-
-
       // circle sub menu page scroll
       if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.sub_menu_page_index == SUB_MENU_PAGE_END) && (millis() - circle_tick_start >= 1000)){
         ui_state.sub_menu_page_index = SUB_MENU_PAGE_0;
@@ -934,11 +1012,40 @@ static void ui_refresh_thread(void *args){
         ui_state.sub_menu_page_index = SUB_MENU_PAGE_5;
         lv_obj_scroll_to_view(sub_menu_pages[ui_state.sub_menu_page_index], LV_ANIM_OFF);
       }
+      
+      //give the semaphore to fetch coin prices
+      if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_PRICE) && 
+        (millis() - last_api_tick_start[0] >= PRICE_RANK_UPDATE_INTERVAL)){
+          xSemaphoreGive(g_nm.global_xsem.coin_price_xsem); // give the semaphore to fetch coin prices
+          last_api_tick_start[0] = millis();
+      }
+      //give the semaphore to fetch real-time weather data
+      if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_WEATHER) && 
+        (ui_state.sub_menu_page_index == SUB_MENU_PAGE_0) && //page 0 is the real-time weather page
+        (millis() - last_api_tick_start[1] >= WEATHER_REALTIME_UPDATE_INTERVAL)){
+          xSemaphoreGive(g_nm.global_xsem.weather_realtime_xsem); // give the semaphore to fetch real-time weather data
+          last_api_tick_start[1] = millis();
+      }
+      //give the semaphore to fetch weather forecast data
+      if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_WEATHER) && 
+        (ui_state.sub_menu_page_index == SUB_MENU_PAGE_1) && //page 1 is the weather forecast page
+        (millis() - last_api_tick_start[2] >= WEATHER_FORECAST_UPDATE_INTERVAL)){
+          xSemaphoreGive(g_nm.global_xsem.weather_forecast_xsem); // give the semaphore to fetch weather forecast data
+          last_api_tick_start[2] = millis();
+      }
+      //give the semaphore to fetch air pullution data
+      if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_WEATHER) && 
+        (ui_state.sub_menu_page_index == SUB_MENU_PAGE_2) && //page 2 is the air pollution page
+        (millis() - last_api_tick_start[3] >= AIR_POLLUTION_UPDATE_INTERVAL)){
+          xSemaphoreGive(g_nm.global_xsem.air_pollution_xsem); // give the semaphore to fetch air pollution data
+          last_api_tick_start[3] = millis();
+      }
 
 
 
-      // check if the next or previous page or ok/cancel button is pressed
-      if(xSemaphoreTake(ui_state.next_page_xsem, 0) == pdTRUE){
+
+      // check if the next touch event is triggered
+      if(xSemaphoreTake(g_nm.global_xsem.next_page_xsem, 0) == pdTRUE){
         if(ui_state.current_screen_type == MENU_SCREEN){
           lv_obj_scroll_to_view(menu_pages[++ui_state.menu_page_index], LV_ANIM_ON);
           if(ui_state.menu_page_index == MENU_PAGE_END) circle_tick_start = millis();//wait for a second before scrolling back to the first page
@@ -948,9 +1055,8 @@ static void ui_refresh_thread(void *args){
           if(ui_state.sub_menu_page_index == SUB_MENU_PAGE_END) circle_tick_start = millis();//wait for a second before scrolling back to the first page
         }
       }
-
-
-      if(xSemaphoreTake(ui_state.prev_page_xsem, 0) == pdTRUE){
+      // check if the previous touch event is triggered
+      if(xSemaphoreTake(g_nm.global_xsem.prev_page_xsem, 0) == pdTRUE){
         if(ui_state.current_screen_type == MENU_SCREEN){
           lv_obj_scroll_to_view(menu_pages[--ui_state.menu_page_index], LV_ANIM_ON);
           if(ui_state.menu_page_index == MENU_PAGE_BEGIN) circle_tick_start = millis();//wait for a second before scrolling back to the first page
@@ -960,22 +1066,57 @@ static void ui_refresh_thread(void *args){
           if(ui_state.sub_menu_page_index == SUB_MENU_PAGE_BEGIN) circle_tick_start = millis();//wait for a second before scrolling back to the first page
         }
       }
-
-
-      if(xSemaphoreTake(ui_state.ok_cancel_xsem, 0) == pdTRUE){
+      // check if the ok/cancel touch event is triggered
+      if(xSemaphoreTake(g_nm.global_xsem.ok_cancel_xsem, 0) == pdTRUE){
         if(ui_state.current_screen_type == MENU_SCREEN){
           ui_state.sub_menu_page_index = ui_state.menu_page_index; 
           lv_obj_scroll_to_view(sub_menu_pages[ui_state.sub_menu_page_index], LV_ANIM_ON);
           ui_state.current_screen_type = SUB_MENU_SCREEN;
+
+          // give the semaphore to fetch coin prices immediately
+          if(ui_state.menu_page_index == MENU_PAGE_PRICE){
+            xSemaphoreGive(g_nm.global_xsem.coin_price_xsem); // give the semaphore to fetch coin prices
+            last_api_tick_start[0] = millis(); // reset the last api tick start time
+          }
+          // give the semaphore to fetch real-time weather data immediately
+          if(ui_state.menu_page_index == MENU_PAGE_WEATHER && ui_state.sub_menu_page_index == SUB_MENU_PAGE_0){
+            xSemaphoreGive(g_nm.global_xsem.weather_realtime_xsem); // give the semaphore to fetch real-time weather data
+            last_api_tick_start[1] = millis(); // reset the last api tick start time
+          }
+          // give the semaphore to fetch weather forecast data immediately
+          if(ui_state.menu_page_index == MENU_PAGE_WEATHER && ui_state.sub_menu_page_index == SUB_MENU_PAGE_1){
+            xSemaphoreGive(g_nm.global_xsem.weather_forecast_xsem); // give the semaphore to fetch weather forecast data
+            last_api_tick_start[2] = millis(); // reset the last api tick start time
+          }
+          // give the semaphore to fetch air pollution data immediately
+          if(ui_state.menu_page_index == MENU_PAGE_WEATHER && ui_state.sub_menu_page_index == SUB_MENU_PAGE_2){
+            xSemaphoreGive(g_nm.global_xsem.air_pollution_xsem); // give the semaphore to fetch air pollution data
+            last_api_tick_start[3] = millis(); // reset the last api tick start time
+          }
         }
         else if(ui_state.current_screen_type == SUB_MENU_SCREEN){
+          //clear all sub menu pages objects
+          for(uint8_t i = 0; i < SUB_MENU_PAGE_END; i++) {
+            ui_sub_menu_page_obj_clear(sub_menu_pages[i]);
+            ui_state.sub_page_inited[i] = false; // reset sub page inited flag
+            LOG_I("Cleared sub menu page %d", i);
+          }
+
+          //clear the icon cache
+          for(auto &coin : g_nm.coin_price_rank){
+            if(coin.second.icon.addr == NULL) continue; //skip if icon data is not available
+            free(coin.second.icon.addr); // free icon data
+            coin.second.icon.addr = NULL;
+            coin.second.icon.size = 0;
+            LOG_W("Freed icon data for coin: %s", coin.second.name.c_str());
+          }
+
+          //switch back to the menu page
           lv_obj_scroll_to_view(menu_pages[ui_state.menu_page_index], LV_ANIM_ON);
           ui_state.current_screen_type = MENU_SCREEN;
+
         }
       } 
-      
-      
-      
       //refresh current sub menu page
       if(ui_state.current_screen_type == SUB_MENU_SCREEN) {
           auto func = refresh_table[ui_state.sub_menu_page_index][ui_state.menu_page_index];
@@ -989,7 +1130,7 @@ static void ui_refresh_thread(void *args){
     if(g_nm.screen.sleep_timeout > 0){
       int cycle = (g_nm.screen.sleep_timeout - g_nm.screen.cnt);
       cycle = cycle > 0 ? cycle : 0;
-      uint8_t full = (uint8_t)(((float)g_nm.screen.brightness/100.0f) * 255);//
+      uint8_t full = (uint8_t)(((float)g_nm.screen.brightness/100.0f) * 255);
       cycle = cycle * full / g_nm.screen.sleep_timeout;
       tft_bl_ctrl((float)cycle / 255.0f);
       g_nm.screen.active = cycle > 0;

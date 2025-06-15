@@ -38,7 +38,7 @@ void setup() {
   delay(50);
   /*********************************************************** INIT DISPLAY ***************************************************************/
   taskName = "(ui)";
-  xTaskCreatePinnedToCore(display_thread, taskName.c_str(), 1024*5, (void*)taskName.c_str(), TASK_PRIORITY_DISPLAY, &task_ui, UiTaskCore);
+  xTaskCreatePinnedToCore(display_thread, taskName.c_str(), 1024*5, (void*)taskName.c_str(), TASK_PRIORITY_UI, &task_ui, UiTaskCore);
   delay(50);
   /*********************************************************** FORCE CONFIG **************************************************************/
   if(g_nm.need_cfg){

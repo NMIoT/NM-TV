@@ -185,8 +185,8 @@ void nmapi_thread_entry(void *args){
             continue;
         }
 
-        /***********************************update crypto rank price data every 60s************************************/
-        if(thread_cnt % 20 == 0) {
+        /***********************************update crypto rank price data************************************/
+        if(xSemaphoreTake(g_nm.global_xsem.coin_price_xsem, 0) == pdTRUE) {
             json = api->get_crypto_rank_price(1, 7, "USDT");
             max_json_size = max(max_json_size, json.length());
             // LOG_W("%s , size of json: %d", json.c_str(), json.length());
@@ -252,8 +252,8 @@ void nmapi_thread_entry(void *args){
                 free(buf); // Free the temporary buffer after copying
             }
         }
-        /************************************update weather realtime data every 10m************************************/
-        if((thread_cnt + 10) % (60*1) == 0) {
+        /************************************update weather realtime data************************************/
+        if(xSemaphoreTake(g_nm.global_xsem.weather_realtime_xsem, 0) == pdTRUE) {
             // // https://openweathermap.org/img/wn/03d.png
             // // https://openweathermap.org/img/wn/03d@2x.png
             // double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
@@ -319,8 +319,8 @@ void nmapi_thread_entry(void *args){
                 LOG_E("No weather data found");
             }
         }
-        /************************************update weather forecast data every 15m ***********************************/
-        if((thread_cnt + 20) % (60*1) == 0) {
+        /************************************update weather forecast data ***********************************/
+        if(xSemaphoreTake(g_nm.global_xsem.weather_forecast_xsem, 0) == pdTRUE) {
             // double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_weather_forecast(g_nm.location.coord.lat, g_nm.location.coord.lon, 8);
             max_json_size = max(max_json_size, json.length());
@@ -395,8 +395,8 @@ void nmapi_thread_entry(void *args){
                 LOG_E("No weather forecast data found");
             }
         }
-        /************************************update air pollution data every 15m **************************************/
-        if((thread_cnt + 40) % (60*1) == 0){
+        /************************************update air pollution data **************************************/
+        if(xSemaphoreTake(g_nm.global_xsem.air_pollution_xsem, 0) == pdTRUE) {
             // double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_air_pollution(g_nm.location.coord.lat, g_nm.location.coord.lon);
             max_json_size = max(max_json_size, json.length());

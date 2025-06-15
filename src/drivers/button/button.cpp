@@ -6,7 +6,7 @@
 #include "TouchButton.h"
 
 #define TOUCH_PIN       T9
-#define TOUCH_THRESHOLD 90
+#define TOUCH_THRESHOLD 95
 TouchButton tbtn(TOUCH_PIN, TOUCH_THRESHOLD); 
 
 void force_cfg_cb(void){
@@ -39,6 +39,12 @@ void button_thread_entry(void *args){
 
 
   while (true){
+    // static uint32_t last_tick = millis();
+    // if(millis() - last_tick > 100) {
+    //   LOG_I("Touch value: %d, Threshold: %d", touchRead(TOUCH_PIN), TOUCH_THRESHOLD);
+    //   last_tick = millis();
+    // }
+
     tbtn.tick();
     delay(30);
   }

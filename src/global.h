@@ -13,6 +13,11 @@
 #define WIFI_RSSI_STRONG    (-60)
 #define WIFI_RSSI_GOOD      (-70)
 
+#define PRICE_RANK_UPDATE_INTERVAL (1000*60) //update every minute
+#define WEATHER_REALTIME_UPDATE_INTERVAL (1000*60*10) //update every 10 minutes
+#define WEATHER_FORECAST_UPDATE_INTERVAL (1000*60*15) //update every 15 minutes
+#define AIR_POLLUTION_UPDATE_INTERVAL (1000*60*20) //update every 20 minutes
+
 
 #define LvglTaskCore      1
 #define UiRefreshTaskCore 1
@@ -29,7 +34,7 @@ enum{
     TASK_PRIORITY_CONNECT, 
     TASK_PRIORITY_LED, 
     TASK_PRIORITY_CONFIG_MONITOR,
-    TASK_PRIORITY_DISPLAY, 
+    TASK_PRIORITY_UI, 
     TASK_PRIORITY_UI_REFRESH,
     TASK_PRIORITY_LVGL_DRV, 
 
@@ -234,6 +239,20 @@ typedef struct{
 }location_info_t;
 
 typedef struct{
+    SemaphoreHandle_t   coin_price_xsem; // Semaphore for coin price update
+    SemaphoreHandle_t   weather_realtime_xsem; // Semaphore for weather realtime update
+    SemaphoreHandle_t   weather_forecast_xsem; // Semaphore for weather forecast update
+    SemaphoreHandle_t   air_pollution_xsem; // Semaphore for air pollution update
+
+    SemaphoreHandle_t   next_page_xsem;       // semaphore for next page
+    SemaphoreHandle_t   prev_page_xsem;       // semaphore for previous page
+    SemaphoreHandle_t   ok_cancel_xsem;       // semaphore for ok or cancel action
+}global_evet_drive_xem_t;
+
+
+
+
+typedef struct{
     board_info_t        board;
     screen_info_t       screen;
     connect_info_t      connection;
@@ -242,6 +261,7 @@ typedef struct{
     weather_realtime_info_t weather_realtime;
     weather_forecast_info_t weather_forecast;
     air_pollution_info_t    air_pollution;
+    global_evet_drive_xem_t global_xsem;
     bool                need_cfg;
 }nm_sal_t;
 
