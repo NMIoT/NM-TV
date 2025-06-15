@@ -81,7 +81,7 @@ ui_state_t ui_state = {
 static void ui_price_rank_summary_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page);
 static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page);
 
-static void ui_weather_realtime_refresh(weather_realtime_info_t &realtime, lv_obj_t *page);
+static void ui_weather_realtime_refresh(weather_realtime_info_t &realtime, air_pollution_info_t &air ,lv_obj_t *page);
 
 typedef void (*page_refresh_func_t)(void);
 page_refresh_func_t refresh_table[SUB_MENU_PAGE_END + 1][MENU_PAGE_END + 1] = {
@@ -111,7 +111,7 @@ page_refresh_func_t refresh_table[SUB_MENU_PAGE_END + 1][MENU_PAGE_END + 1] = {
     { 
       NULL, 
       [](){ ui_price_rank_details_refresh(g_nm.coin_price_rank, sub_menu_page_1); }, // MENU_PAGE_PRICE
-      [](){ ui_weather_realtime_refresh(g_nm.weather_realtime, sub_menu_page_1); },  // MENU_PAGE_WEATHER
+      [](){ ui_weather_realtime_refresh(g_nm.weather_realtime, g_nm.air_pollution, sub_menu_page_1); },  // MENU_PAGE_WEATHER
       [](){ /* clock refresh */ }, // MENU_PAGE_CLOCK
       [](){ /* idea refresh */ }, // MENU_PAGE_IDEA
       [](){ /* album refresh */ }, // MENU_PAGE_ALBUM
@@ -181,16 +181,19 @@ page_refresh_func_t refresh_table[SUB_MENU_PAGE_END + 1][MENU_PAGE_END + 1] = {
 LV_FONT_DECLARE(ds_digib_font_30)
 LV_FONT_DECLARE(ds_digib_font_85)
 // LV_FONT_DECLARE(symbol_10)
-static const lv_font_t *lb_menu_title_font              = &lv_font_montserrat_34;
-static const lv_font_t *lb_price_rank_font              = &lv_font_montserrat_34;
-static const lv_font_t *lb_coin_name_detail_font        = &lv_font_montserrat_34;
-static const lv_font_t *lb_coin_price_detail_font       = &lv_font_montserrat_38;
-static const lv_font_t *lb_coin_price_change_1h_font    = &lv_font_montserrat_16;
-static const lv_font_t *lb_coin_price_change_24h_font   = &lv_font_montserrat_16;
-static const lv_font_t *lb_coin_price_last_updated_font = &lv_font_montserrat_16;
-static const lv_font_t *lb_weather_realtime_temp_font   = &ds_digib_font_85;
+static const lv_font_t *lb_menu_title_font                 = &lv_font_montserrat_34;
+static const lv_font_t *lb_price_rank_font                 = &lv_font_montserrat_34;
+static const lv_font_t *lb_coin_name_detail_font           = &lv_font_montserrat_34;
+static const lv_font_t *lb_coin_price_detail_font          = &lv_font_montserrat_38;
+static const lv_font_t *lb_coin_price_change_1h_font       = &lv_font_montserrat_16;
+static const lv_font_t *lb_coin_price_change_24h_font      = &lv_font_montserrat_16;
+static const lv_font_t *lb_coin_price_last_updated_font    = &lv_font_montserrat_16;
+static const lv_font_t *lb_weather_realtime_temp_font      = &ds_digib_font_85;
 static const lv_font_t *lb_weather_realtime_temp_feel_font = &ds_digib_font_30;
 static const lv_font_t *lb_weather_realtime_desc_font      = &lv_font_montserrat_24;
+static const lv_font_t *lb_weather_realtime_wind_speed_font= &lv_font_montserrat_20;
+static const lv_font_t *lb_weather_realtime_humidity_font  = &lv_font_montserrat_20;
+static const lv_font_t *lb_weather_realtime_aqi_desc_font  = &lv_font_montserrat_20;
 static const lv_font_t *lb_weather_realtime_temp_unit_font = &lv_font_montserrat_22;
 static const lv_font_t *lb_weather_realtime_city_name_font = &lv_font_montserrat_24;
 
@@ -976,9 +979,10 @@ static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin
   }
 }
 
-static void ui_weather_realtime_refresh(weather_realtime_info_t &realtime, lv_obj_t *page){
+static void ui_weather_realtime_refresh(weather_realtime_info_t &realtime, air_pollution_info_t &air ,lv_obj_t *page){
   if(page == NULL) return;
   if(realtime.weather.empty()) return; // no weather data available
+  if(air.list.empty()) return; // no air pollution data available
 
   static lv_img_dsc_t weather_icon_img_dsc;
   static lv_obj_t* icon_png = NULL;
@@ -987,13 +991,8 @@ static void ui_weather_realtime_refresh(weather_realtime_info_t &realtime, lv_ob
   static lv_obj_t* lb_city_name = NULL, *lb_country_name = NULL;
   static lv_obj_t* lb_sunrise = NULL, *lb_sunset = NULL;
   static lv_obj_t* lb_weather_desc = NULL, *lb_weather_main = NULL, *lb_wind_speed = NULL, *lb_wind_deg = NULL;
+  static lv_obj_t *lb_weather_aqi_desc = NULL;
   lv_coord_t width = 0;
-
-
-
-  // lv_obj_t *spinner = lv_spinner_create(page, 1000, 60); // parent为你的页面对象，1000ms一圈，60px直径
-  // lv_obj_set_size(spinner, 60, 60); // 设置大小
-  // lv_obj_align(spinner, LV_ALIGN_CENTER, 0, 0); // 居中显示
 
 
   if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]){
@@ -1076,6 +1075,50 @@ static void ui_weather_realtime_refresh(weather_realtime_info_t &realtime, lv_ob
     lv_label_set_long_mode(lb_weather_desc, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_width(lb_weather_desc, SCREEN_WIDTH); // set width to half of the screen width
     lv_obj_align(lb_weather_desc, LV_ALIGN_CENTER, 0, -30); // align to the top left corner with some padding
+
+
+    //create weather wind speed label
+    lb_wind_speed = lv_label_create(page);
+    init = (lb_wind_speed != NULL);
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = ui_state.sub_page_inited[SUB_MENU_PAGE_1] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]) {
+      LOG_E("Failed to create wind speed label for weather");
+      return;
+    }
+    lv_obj_set_style_text_font(lb_wind_speed, lb_weather_realtime_wind_speed_font, LV_PART_MAIN);
+    lv_obj_set_style_text_color(lb_wind_speed, lv_color_hex(0xF0F0F0 ), LV_PART_MAIN);
+    lv_label_set_long_mode(lb_wind_speed, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_set_width(lb_wind_speed, SCREEN_WIDTH); // set width to half of the screen width
+    lv_obj_align(lb_wind_speed, LV_ALIGN_TOP_LEFT, 0, 103); // align to the top left corner with some padding
+
+
+    //create weather humidity label
+    lb_humidity = lv_label_create(page);
+    init = (lb_humidity != NULL);
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = ui_state.sub_page_inited[SUB_MENU_PAGE_1] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]) {
+      LOG_E("Failed to create humidity label for weather");
+      return;
+    }
+    lv_obj_set_style_text_font(lb_humidity, lb_weather_realtime_humidity_font, LV_PART_MAIN);
+    lv_obj_set_style_text_color(lb_humidity, lv_color_hex(0xF0F0F0 ), LV_PART_MAIN);
+    lv_label_set_long_mode(lb_humidity, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_set_width(lb_humidity, SCREEN_WIDTH); // set width to half of the screen width
+    lv_obj_align(lb_humidity, LV_ALIGN_TOP_LEFT, 0, 120); // align to the top left corner with some padding
+
+
+    //create weather aqi label
+    lb_weather_aqi_desc = lv_label_create(page);
+    init = (lb_weather_aqi_desc != NULL);
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = ui_state.sub_page_inited[SUB_MENU_PAGE_1] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]) {
+      LOG_E("Failed to create aqi desc label for weather");
+      return;
+    }
+    lv_obj_set_style_text_font(lb_weather_aqi_desc, lb_weather_realtime_aqi_desc_font, LV_PART_MAIN);
+    lv_label_set_long_mode(lb_weather_aqi_desc, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_set_width(lb_weather_aqi_desc, SCREEN_WIDTH); // set width to half of the screen width
+    lv_obj_align(lb_weather_aqi_desc, LV_ALIGN_TOP_LEFT, 50, 19); // align to the top left corner with some padding
   }
 
 
@@ -1109,6 +1152,50 @@ static void ui_weather_realtime_refresh(weather_realtime_info_t &realtime, lv_ob
   width = (width > SCREEN_WIDTH) ? SCREEN_WIDTH : width; // limit width to screen width
   lv_obj_set_width(lb_weather_desc, width);
   lv_label_set_text(lb_weather_desc, (main_str + "/" + desc_str).c_str());
+
+
+  //update wind speed label
+  String wind_speed_str = String(realtime.wind.speed, 1) + " m/s";
+  width = lv_txt_get_width(wind_speed_str.c_str(), strlen(wind_speed_str.c_str()), lb_weather_realtime_wind_speed_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_wind_speed, width);
+  lv_label_set_text(lb_wind_speed, wind_speed_str.c_str());
+
+
+  //update humidity label
+  String humidity_str = String(realtime.main.humidity, 0) + "%";
+  width = lv_txt_get_width(humidity_str.c_str(), strlen(humidity_str.c_str()), lb_weather_realtime_humidity_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_humidity, width);
+  lv_label_set_text(lb_humidity, humidity_str.c_str());
+
+
+  //update aqi label
+  int aqi = air.list[0].main.aqi;
+  lv_color_t font_color = lv_color_hex(0xFFFFFF);
+  String  aqi_desc = "";
+  if(aqi == 1) {
+      font_color = lv_color_hex(0x00FF00); // Good
+      aqi_desc = "Good";
+  } else if(aqi == 2) {
+      font_color = lv_color_hex(0xFFFF00); // Fair
+      aqi_desc = "Fair";
+  } else if(aqi == 3) {
+      font_color = lv_color_hex(0xFFA500); // Moderate
+      aqi_desc = "Mid";
+  } else if(aqi == 4) {
+      font_color = lv_color_hex(0x800080); // Poor
+      aqi_desc = "Poor";
+  } else if(aqi == 5) {
+      font_color = lv_color_hex(0xFF0000); // Very Poor
+      aqi_desc = "Worst";
+  } else {
+      font_color = lv_color_hex(0xFFFFFF); // Unknown
+      aqi_desc = "Unk";
+  }
+  aqi_desc = String(aqi) + ":" + aqi_desc; // Add AQI prefix
+  width = lv_txt_get_width(aqi_desc.c_str(), strlen(aqi_desc.c_str()), lb_weather_realtime_aqi_desc_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_weather_aqi_desc, width);
+  lv_label_set_text(lb_weather_aqi_desc, aqi_desc.c_str());
+  lv_obj_set_style_text_color(lb_weather_aqi_desc, font_color, LV_PART_MAIN);
 }
 
 
@@ -1119,7 +1206,7 @@ static void ui_refresh_thread(void *args){
   free(name);
   uint32_t circle_tick_start = millis(), last_api_tick_start[4] = {millis(), millis(), millis(), millis()};
   while (true){
-    delay(100);
+    delay(1000);
     if(xSemaphoreTake(lvgl_xMutex, 0) == pdTRUE){
       // circle menu page scroll
       if((ui_state.current_screen_type == MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_END) && (millis() - circle_tick_start >= 1000)){
@@ -1158,7 +1245,13 @@ static void ui_refresh_thread(void *args){
           last_api_tick_start[1] = millis();
       }
 
-
+      //give the semaphore to fetch air pullution data
+      if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_WEATHER) && 
+        (ui_state.sub_menu_page_index == SUB_MENU_PAGE_1) && //page 1 is the real-time weather page
+        (millis() - last_api_tick_start[2] >= AIR_POLLUTION_UPDATE_INTERVAL)){
+          xSemaphoreGive(g_nm.global_xsem.air_pollution_xsem); // give the semaphore to fetch air pollution data
+          last_api_tick_start[2] = millis();
+      }
 
 
 
@@ -1204,6 +1297,11 @@ static void ui_refresh_thread(void *args){
             last_api_tick_start[1] = millis(); // reset the last api tick start time
           }
 
+          // give the semaphore to fetch air pollution data immediately
+          if(ui_state.menu_page_index == MENU_PAGE_WEATHER && ui_state.sub_menu_page_index == SUB_MENU_PAGE_1){
+            xSemaphoreGive(g_nm.global_xsem.air_pollution_xsem); // give the semaphore to fetch real-time weather data
+            last_api_tick_start[2] = millis(); // reset the last api tick start time
+          }
         }
         else if(ui_state.current_screen_type == SUB_MENU_SCREEN){
           //clear all sub menu pages objects

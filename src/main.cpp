@@ -90,8 +90,10 @@ void setup() {
   }
 
   //for test, set location to Chengdu, China
-  g_nm.location.coord.lat = 30.6667;
-  g_nm.location.coord.lon = 104.0667;
+  g_nm.location.coord.lat = 40.6667;
+  g_nm.location.coord.lon = 114.0667;
+  // g_nm.location.coord.lat = 23.1167;
+  // g_nm.location.coord.lon = 113.25;
 
 
   delete tz;

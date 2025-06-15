@@ -182,7 +182,7 @@ size_t NMIoTAPIClass::download_weather_icon(const String &icon_id, uint8_t *buf,
         LOG_W("Downloaded %d/%d bytes from %s", s, size, url.c_str());
         return 0;
     } else {
-        LOG_I("Downloaded %d bytes from %s", s, url.c_str());
+        LOG_D("Downloaded %d bytes from %s", s, url.c_str());
     }
     http.endRequest();
     return s;
@@ -290,7 +290,7 @@ void nmapi_thread_entry(void *args){
             // double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_weather_realtime(g_nm.location.coord.lat, g_nm.location.coord.lon);
             max_json_size = max(max_json_size, json.length());
-            // LOG_W("%s", json.c_str());
+            LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
                 LOG_E("Failed to get weather realtime data");
                 thread_cnt++;
@@ -454,7 +454,7 @@ void nmapi_thread_entry(void *args){
             // double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_air_pollution(g_nm.location.coord.lat, g_nm.location.coord.lon);
             max_json_size = max(max_json_size, json.length());
-            // LOG_W("%s", json.c_str());
+            LOG_W("%s", json.c_str());
             if(json.isEmpty()) {
                 LOG_E("Failed to get air pollution data");
                 thread_cnt++;
