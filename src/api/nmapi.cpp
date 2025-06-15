@@ -107,9 +107,9 @@ size_t NMIoTAPIClass::download_coin_icon(int coin_id, uint8_t *buf, size_t buf_s
         return 0;
     }
     String url = "/static/img/coins/32x32/" + String(coin_id) + ".png";
-    WiFiClientSecure sslwifi;
-    sslwifi.setInsecure();
-    HttpClient http(sslwifi, "s2.coinmarketcap.com", 443);
+    WiFiClientSecure sslclient;
+    sslclient.setInsecure();
+    HttpClient http(sslclient, "s2.coinmarketcap.com", 443);
 
     http.sendHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
@@ -147,6 +147,46 @@ size_t NMIoTAPIClass::download_coin_icon(int coin_id, uint8_t *buf, size_t buf_s
     return s; 
 }
 
+size_t NMIoTAPIClass::download_weather_icon(const String &icon_id, uint8_t *buf, size_t buf_size) {
+    if (!buf) {
+        LOG_E("icon buffer is null");
+        return 0;
+    }
+    String url = "/img/wn/" + icon_id + ".png";
+    WiFiClient client;
+    HttpClient http(client, "openweathermap.org", 80);
+
+    http.sendHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+
+    int httpCode = http.get(url.c_str());
+    if (httpCode != HTTP_SUCCESS) {
+        LOG_E("HTTP GET failed, code: %d", httpCode);
+        memset(buf, 0, buf_size);
+        return 0;
+    }
+    size_t size = http.contentLength();
+    if (size <= 0) {
+        LOG_E("Invalid content length: %d", size);
+        http.endRequest();
+        memset(buf, 0, buf_size);
+        return 0;
+    }
+    if (size > buf_size) {
+        LOG_E("Buffer size (%d) is smaller than content length (%d)", buf_size, size);
+        http.endRequest();
+        memset(buf, 0, buf_size);
+        return 0;
+    }
+    int s = http.readBytes(buf, size);
+    if (s != size) {
+        LOG_W("Downloaded %d/%d bytes from %s", s, size, url.c_str());
+        return 0;
+    } else {
+        LOG_I("Downloaded %d bytes from %s", s, url.c_str());
+    }
+    http.endRequest();
+    return s;
+ }
 
 void nmapi_thread_entry(void *args){
     char *name = (char*)malloc(20);
@@ -160,15 +200,6 @@ void nmapi_thread_entry(void *args){
         vTaskDelete(NULL);
         return;
     }
-
-    // auto it = city_map.find("Chengdu,CN");
-    // if(it != city_map.end()) {
-    //     float lat = it->second.lat;
-    //     float lon = it->second.lon;
-    //     LOG_I("Found city: %s, lat: %.6f, lon: %.6f", it->first.c_str(), lat, lon);
-    // }
-
-
 
     uint8_t   fail_count = 0;
     uint32_t  thread_cnt = 0;
@@ -254,8 +285,8 @@ void nmapi_thread_entry(void *args){
         }
         /************************************update weather realtime data************************************/
         if(xSemaphoreTake(g_nm.global_xsem.weather_realtime_xsem, 0) == pdTRUE) {
-            // // https://openweathermap.org/img/wn/03d.png
-            // // https://openweathermap.org/img/wn/03d@2x.png
+            // https://openweathermap.org/img/wn/04d.png
+            // https://openweathermap.org/img/wn/03d@2x.png
             // double lat = 30.5728, lon = 104.0668; // Default coordinates for testing
             json = api->get_weather_realtime(g_nm.location.coord.lat, g_nm.location.coord.lon);
             max_json_size = max(max_json_size, json.length());
@@ -288,10 +319,6 @@ void nmapi_thread_entry(void *args){
                 g_nm.weather_realtime.sys.sunrise = weather.containsKey("sys") && weather["sys"].containsKey("sunrise") ? weather["sys"]["sunrise"].as<uint32_t>() : 0;
                 g_nm.weather_realtime.sys.sunset = weather.containsKey("sys") && weather["sys"].containsKey("sunset") ? weather["sys"]["sunset"].as<uint32_t>() : 0;
                 g_nm.weather_realtime.visibility = weather.containsKey("visibility") ? weather["visibility"].as<uint32_t>() : 0;
-                g_nm.weather_realtime.weather.id = weather.containsKey("weather") && weather["weather"].is<JsonArray>() && weather["weather"][0].containsKey("id") ? weather["weather"][0]["id"].as<uint32_t>() : 0;
-                g_nm.weather_realtime.weather.main = weather.containsKey("weather") && weather["weather"].is<JsonArray>() && weather["weather"][0].containsKey("main") ? weather["weather"][0]["main"].as<String>() : "";
-                g_nm.weather_realtime.weather.description = weather.containsKey("weather") && weather["weather"].is<JsonArray>() && weather["weather"][0].containsKey("description") ? weather["weather"][0]["description"].as<String>() : "";
-                g_nm.weather_realtime.weather.icon = weather.containsKey("weather") && weather["weather"].is<JsonArray>() && weather["weather"][0].containsKey("icon") ? weather["weather"][0]["icon"].as<String>() : "";
                 g_nm.weather_realtime.main.feels_like = weather.containsKey("main") && weather["main"].containsKey("feels_like") ? weather["main"]["feels_like"].as<double>() : 0.0;
                 g_nm.weather_realtime.main.grnd_level = weather.containsKey("main") && weather["main"].containsKey("grnd_level") ? weather["main"]["grnd_level"].as<double>() : 0.0;
                 g_nm.weather_realtime.main.sea_level = weather.containsKey("main") && weather["main"].containsKey("sea_level") ? weather["main"]["sea_level"].as<double>() : 0.0;
@@ -304,17 +331,44 @@ void nmapi_thread_entry(void *args){
                 g_nm.weather_realtime.wind.deg = weather.containsKey("wind") && weather["wind"].containsKey("deg") ? weather["wind"]["deg"].as<float>() : 0;
                 g_nm.weather_realtime.timezone = weather.containsKey("timezone") ? weather["timezone"].as<int>() : 0;
                 g_nm.weather_realtime.cod = weather.containsKey("cod") ? weather["cod"].as<int>() : 0;
+                if (weather.containsKey("weather") && weather["weather"].is<JsonArray>()) {
+                    JsonArray weatherArr = weather["weather"].as<JsonArray>();
+                    g_nm.weather_realtime.weather.clear();
+                    for (JsonObject w : weatherArr) {
+                        weather_info_t info;
+                        info.id = w.containsKey("id") ? w["id"].as<uint32_t>() : 0;
+                        info.main = w.containsKey("main") ? w["main"].as<String>() : "";
+                        info.description = w.containsKey("description") ? w["description"].as<String>() : "";
+                        info.icon.id = w.containsKey("icon") ? w["icon"].as<String>() : "";
+                        g_nm.weather_realtime.weather.push_back(info);
+                    }
+                }
 
-
-                LOG_W("Weather in %s (%s): %.2f'C, %s, %s, Humidity: %.1f%%, Wind: %.1f m/s",
+ 
+                LOG_W("Weather in %s (%s): %.2f'C, %s, %s, Humidity: %.1f%%, Wind: %.1f m/s, Icon: %s",
                     g_nm.weather_realtime.name.c_str(),
                     g_nm.weather_realtime.sys.country.c_str(),
                     g_nm.weather_realtime.main.temp,
-                    g_nm.weather_realtime.weather.main.c_str(),
-                    g_nm.weather_realtime.weather.description.c_str(),
+                    g_nm.weather_realtime.weather[0].description.c_str(),
+                    g_nm.weather_realtime.weather[0].main.c_str(),
                     g_nm.weather_realtime.main.humidity,
-                    g_nm.weather_realtime.wind.speed
+                    g_nm.weather_realtime.wind.speed,
+                    g_nm.weather_realtime.weather[0].icon.id.c_str()
                 );
+
+
+
+            size_t png_max = 1024 * 2;
+
+            if(g_nm.weather_realtime.weather[0].icon.addr != NULL) continue; // Skip if the icon already exists
+            uint8_t* buf   = (uint8_t*)malloc(png_max); // Allocate a buffer for the icon
+            String icon_id = g_nm.weather_realtime.weather[0].icon.id; // Get the icon ID
+
+            g_nm.weather_realtime.weather[0].icon.size    = NMIoTAPIClass::download_weather_icon(icon_id, buf, png_max); // Download the icon for the weather
+            g_nm.weather_realtime.weather[0].icon.addr    = (uint8_t*)malloc(g_nm.weather_realtime.weather[0].icon.size); // Allocate memory for the icon address
+            memcpy(g_nm.weather_realtime.weather[0].icon.addr, buf, g_nm.weather_realtime.weather[0].icon.size); // Copy the downloaded icon to the address
+            free(buf); // Free the temporary buffer after copying
+            g_nm.weather_realtime.weather[0].icon.updated = (g_nm.weather_realtime.weather[0].icon.size > 0); // Set the flag to true if the icon was downloaded successfully
             } else {
                 LOG_E("No weather data found");
             }
@@ -370,7 +424,7 @@ void nmapi_thread_entry(void *args){
                     forecast_item.weather.id = item.containsKey("weather") && item["weather"].is<JsonArray>() && item["weather"][0].containsKey("id") ? item["weather"][0]["id"].as<uint32_t>() : 0;
                     forecast_item.weather.main = item.containsKey("weather") && item["weather"].is<JsonArray>() && item["weather"][0].containsKey("main") ? item["weather"][0]["main"].as<String>() : "";
                     forecast_item.weather.description = item.containsKey("weather") && item["weather"].is<JsonArray>() && item["weather"][0].containsKey("description") ? item["weather"][0]["description"].as<String>() : "";
-                    forecast_item.weather.icon = item.containsKey("weather") && item["weather"].is<JsonArray>() && item["weather"][0].containsKey("icon") ? item["weather"][0]["icon"].as<String>() : "";
+                    forecast_item.weather.icon.id = item.containsKey("weather") && item["weather"].is<JsonArray>() && item["weather"][0].containsKey("icon") ? item["weather"][0]["icon"].as<String>() : "";
                     forecast_item.wind.speed = item.containsKey("wind") && item["wind"].containsKey("speed") ? item["wind"]["speed"].as<float>() : 0;
                     forecast_item.wind.deg = item.containsKey("wind") && item["wind"].containsKey("deg") ? item["wind"]["deg"].as<float>() : 0;
                     forecast_item.wind.gust = item.containsKey("wind") && item["wind"].containsKey("gust") ? item["wind"]["gust"].as<float>() : 0;

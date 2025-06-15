@@ -81,7 +81,7 @@ ui_state_t ui_state = {
 static void ui_price_rank_summary_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page);
 static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page);
 
-
+static void ui_weather_realtime_refresh(weather_realtime_info_t &realtime, lv_obj_t *page);
 
 typedef void (*page_refresh_func_t)(void);
 page_refresh_func_t refresh_table[SUB_MENU_PAGE_END + 1][MENU_PAGE_END + 1] = {
@@ -111,7 +111,7 @@ page_refresh_func_t refresh_table[SUB_MENU_PAGE_END + 1][MENU_PAGE_END + 1] = {
     { 
       NULL, 
       [](){ ui_price_rank_details_refresh(g_nm.coin_price_rank, sub_menu_page_1); }, // MENU_PAGE_PRICE
-      [](){ /* weather refresh */ }, // MENU_PAGE_WEATHER
+      [](){ ui_weather_realtime_refresh(g_nm.weather_realtime, sub_menu_page_1); },  // MENU_PAGE_WEATHER
       [](){ /* clock refresh */ }, // MENU_PAGE_CLOCK
       [](){ /* idea refresh */ }, // MENU_PAGE_IDEA
       [](){ /* album refresh */ }, // MENU_PAGE_ALBUM
@@ -177,27 +177,22 @@ page_refresh_func_t refresh_table[SUB_MENU_PAGE_END + 1][MENU_PAGE_END + 1] = {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 #include "image_240_240.h"
-// LV_FONT_DECLARE(ds_digib_font_10)
+LV_FONT_DECLARE(ds_digib_font_30)
+LV_FONT_DECLARE(ds_digib_font_85)
 // LV_FONT_DECLARE(symbol_10)
-static const lv_font_t *lb_menu_title_font         = &lv_font_montserrat_34;
-static const lv_font_t *lb_price_rank_font         = &lv_font_montserrat_34;
-static const lv_font_t *lb_coin_name_detail_font   = &lv_font_montserrat_34;
-static const lv_font_t *lb_coin_price_detail_font  = &lv_font_montserrat_38;
-static const lv_font_t *lb_coin_price_change_1h_font = &lv_font_montserrat_16;
-static const lv_font_t *lb_coin_price_change_24h_font = &lv_font_montserrat_16;
+static const lv_font_t *lb_menu_title_font              = &lv_font_montserrat_34;
+static const lv_font_t *lb_price_rank_font              = &lv_font_montserrat_34;
+static const lv_font_t *lb_coin_name_detail_font        = &lv_font_montserrat_34;
+static const lv_font_t *lb_coin_price_detail_font       = &lv_font_montserrat_38;
+static const lv_font_t *lb_coin_price_change_1h_font    = &lv_font_montserrat_16;
+static const lv_font_t *lb_coin_price_change_24h_font   = &lv_font_montserrat_16;
 static const lv_font_t *lb_coin_price_last_updated_font = &lv_font_montserrat_16;
+static const lv_font_t *lb_weather_realtime_temp_font   = &ds_digib_font_85;
+static const lv_font_t *lb_weather_realtime_temp_feel_font = &ds_digib_font_30;
+static const lv_font_t *lb_weather_realtime_desc_font      = &lv_font_montserrat_24;
+static const lv_font_t *lb_weather_realtime_temp_unit_font = &lv_font_montserrat_22;
+static const lv_font_t *lb_weather_realtime_city_name_font = &lv_font_montserrat_24;
 
 
 
@@ -694,8 +689,6 @@ static void ui_sub_menu_page_obj_clear(lv_obj_t *page){
   lv_obj_align(background_img_obj, LV_ALIGN_TOP_LEFT, 0, 0);
 }
 
-
-
 static void ui_price_rank_summary_refresh(std::map<ccoin_name, ccoin_node> &coin_price_rank, lv_obj_t *page){
   // https://s2.coinmarketcap.com/static/img/coins/32x32/1.png
   if(coin_price_rank.empty()) return;
@@ -983,6 +976,140 @@ static void ui_price_rank_details_refresh(std::map<ccoin_name, ccoin_node> &coin
   }
 }
 
+static void ui_weather_realtime_refresh(weather_realtime_info_t &realtime, lv_obj_t *page){
+  if(page == NULL) return;
+  if(realtime.weather.empty()) return; // no weather data available
+
+  static lv_img_dsc_t weather_icon_img_dsc;
+  static lv_obj_t* icon_png = NULL;
+  static lv_obj_t* lb_temp = NULL, *lb_temp_feel = NULL, *lb_temp_unit = NULL;
+  static lv_obj_t* lb_humidity = NULL, *lb_grnd_level = NULL, *lb_pressure = NULL;
+  static lv_obj_t* lb_city_name = NULL, *lb_country_name = NULL;
+  static lv_obj_t* lb_sunrise = NULL, *lb_sunset = NULL;
+  static lv_obj_t* lb_weather_desc = NULL, *lb_weather_main = NULL, *lb_wind_speed = NULL, *lb_wind_deg = NULL;
+  lv_coord_t width = 0;
+
+
+
+  // lv_obj_t *spinner = lv_spinner_create(page, 1000, 60); // parent为你的页面对象，1000ms一圈，60px直径
+  // lv_obj_set_size(spinner, 60, 60); // 设置大小
+  // lv_obj_align(spinner, LV_ALIGN_CENTER, 0, 0); // 居中显示
+
+
+  if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]){
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = true; // assume all sub pages are inited
+    bool init = false;
+    //create icon image
+    icon_png = lv_img_create(page);
+    init = (icon_png != NULL);
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = ui_state.sub_page_inited[SUB_MENU_PAGE_1] && init; //set init inactive if any icon image is not created successfully
+    if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]) {
+      LOG_E("Failed to create icon image for weather");
+      return;
+    }
+    lv_obj_align(icon_png, LV_ALIGN_TOP_LEFT, 0, 3);
+
+
+    //create city name label
+    lb_city_name = lv_label_create(page);
+    init = (lb_city_name != NULL);
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = ui_state.sub_page_inited[SUB_MENU_PAGE_1] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]) {
+      LOG_E("Failed to create city name label for weather");
+      return;
+    }
+    lv_obj_set_width(lb_city_name, SCREEN_WIDTH / 2); // set width to half of the screen width
+    lv_obj_set_style_text_font(lb_city_name, lb_weather_realtime_city_name_font, LV_PART_MAIN);
+    lv_obj_set_style_text_color(lb_city_name, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+    lv_label_set_long_mode(lb_city_name, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_align(lb_city_name, LV_ALIGN_TOP_LEFT, 0, 45); // align to the top right corner with some padding
+    lv_label_set_text(lb_city_name, realtime.name.c_str());
+
+
+    //create temperature unit label
+    lb_temp_unit = lv_label_create(page);
+    init = (lb_temp_unit != NULL);
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = ui_state.sub_page_inited[SUB_MENU_PAGE_1] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]) {
+      LOG_E("Failed to create temperature unit label for weather");
+      return;
+    }
+    lv_obj_set_style_text_font(lb_temp_unit, lb_weather_realtime_temp_unit_font, LV_PART_MAIN);
+    lv_obj_set_style_text_color(lb_temp_unit, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+    lv_label_set_text(lb_temp_unit, (String("°") + String("C")).c_str()); // Set temperature unit to Celsius
+    lv_obj_align(lb_temp_unit, LV_ALIGN_TOP_RIGHT, -2, 8); // align to the top right corner with some padding
+
+    //create temperature label
+    lb_temp = lv_label_create(page);
+    init = (lb_temp != NULL);
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = ui_state.sub_page_inited[SUB_MENU_PAGE_1] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]) {
+      LOG_E("Failed to create temperature label for weather");
+      return;
+    }
+    lv_obj_align(lb_temp, LV_ALIGN_TOP_LEFT, SCREEN_WIDTH / 2, 0); // align to the top right corner with some padding
+    lv_obj_set_style_text_font(lb_temp, lb_weather_realtime_temp_font, LV_PART_MAIN);
+    lv_obj_set_style_text_color(lb_temp, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+
+    //create feel temperature label
+    lb_temp_feel = lv_label_create(page);
+    init = (lb_temp_feel != NULL);
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = ui_state.sub_page_inited[SUB_MENU_PAGE_1] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]) {
+      LOG_E("Failed to create feel temperature label for weather");
+      return;
+    }
+    lv_obj_set_style_text_font(lb_temp_feel, lb_weather_realtime_temp_feel_font, LV_PART_MAIN);
+    lv_obj_set_style_text_color(lb_temp_feel, lv_color_hex(0x00FF00), LV_PART_MAIN);
+    lv_obj_align(lb_temp_feel, LV_ALIGN_TOP_RIGHT, 0, 42); // align to the top right corner with some padding
+
+    //create weather description label
+    lb_weather_desc = lv_label_create(page);
+    init = (lb_weather_desc != NULL);
+    ui_state.sub_page_inited[SUB_MENU_PAGE_1] = ui_state.sub_page_inited[SUB_MENU_PAGE_1] && init; //set init inactive if any label is not created successfully
+    if(!ui_state.sub_page_inited[SUB_MENU_PAGE_1]) {
+      LOG_E("Failed to create weather description label for weather");
+      return;
+    }
+    lv_obj_set_style_text_font(lb_weather_desc, lb_weather_realtime_desc_font, LV_PART_MAIN);
+    lv_obj_set_style_text_color(lb_weather_desc, lv_color_hex(0xEE7D30), LV_PART_MAIN);
+    lv_label_set_long_mode(lb_weather_desc, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_set_width(lb_weather_desc, SCREEN_WIDTH); // set width to half of the screen width
+    lv_obj_align(lb_weather_desc, LV_ALIGN_CENTER, 0, -30); // align to the top left corner with some padding
+  }
+
+
+
+  //update coin icon image descriptor
+  weather_icon_img_dsc.header.cf = LV_IMG_CF_RAW_ALPHA;
+  weather_icon_img_dsc.header.w = 0; //auto width
+  weather_icon_img_dsc.header.h = 0; //auto height
+  weather_icon_img_dsc.header.always_zero = 0;
+  weather_icon_img_dsc.header.reserved = 0;
+  weather_icon_img_dsc.data_size = realtime.weather[0].icon.size;
+  weather_icon_img_dsc.data      = (const uint8_t *)(realtime.weather[0].icon.addr);
+  lv_img_set_src(icon_png, &weather_icon_img_dsc);
+
+  //update temperature label
+  String temp_str = String(realtime.main.temp, 0);
+  width = lv_txt_get_width(temp_str.c_str(), strlen(temp_str.c_str()), lb_weather_realtime_temp_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_temp, width);
+  lv_label_set_text(lb_temp, temp_str.c_str());
+
+  //update feel temperature label
+  String temp_feel_str = String(realtime.main.feels_like, 0);
+  width = lv_txt_get_width(temp_feel_str.c_str(), strlen(temp_feel_str.c_str()), lb_weather_realtime_temp_feel_font, 0, LV_TEXT_FLAG_NONE);
+  lv_obj_set_width(lb_temp_feel, width);
+  lv_label_set_text(lb_temp_feel, temp_feel_str.c_str());
+
+  //update weather description label
+  String main_str = realtime.weather[0].main;
+  String desc_str = realtime.weather[0].description;
+  width = lv_txt_get_width((main_str + "/" + desc_str).c_str(), strlen((main_str + "/" + desc_str).c_str()), lb_weather_realtime_desc_font, 0, LV_TEXT_FLAG_NONE);
+  width = (width > SCREEN_WIDTH) ? SCREEN_WIDTH : width; // limit width to screen width
+  lv_obj_set_width(lb_weather_desc, width);
+  lv_label_set_text(lb_weather_desc, (main_str + "/" + desc_str).c_str());
+}
 
 
 static void ui_refresh_thread(void *args){
@@ -1013,6 +1140,10 @@ static void ui_refresh_thread(void *args){
         lv_obj_scroll_to_view(sub_menu_pages[ui_state.sub_menu_page_index], LV_ANIM_OFF);
       }
       
+
+
+
+
       //give the semaphore to fetch coin prices
       if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_PRICE) && 
         (millis() - last_api_tick_start[0] >= PRICE_RANK_UPDATE_INTERVAL)){
@@ -1021,25 +1152,12 @@ static void ui_refresh_thread(void *args){
       }
       //give the semaphore to fetch real-time weather data
       if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_WEATHER) && 
-        (ui_state.sub_menu_page_index == SUB_MENU_PAGE_0) && //page 0 is the real-time weather page
+        (ui_state.sub_menu_page_index == SUB_MENU_PAGE_1) && //page 1 is the real-time weather page
         (millis() - last_api_tick_start[1] >= WEATHER_REALTIME_UPDATE_INTERVAL)){
           xSemaphoreGive(g_nm.global_xsem.weather_realtime_xsem); // give the semaphore to fetch real-time weather data
           last_api_tick_start[1] = millis();
       }
-      //give the semaphore to fetch weather forecast data
-      if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_WEATHER) && 
-        (ui_state.sub_menu_page_index == SUB_MENU_PAGE_1) && //page 1 is the weather forecast page
-        (millis() - last_api_tick_start[2] >= WEATHER_FORECAST_UPDATE_INTERVAL)){
-          xSemaphoreGive(g_nm.global_xsem.weather_forecast_xsem); // give the semaphore to fetch weather forecast data
-          last_api_tick_start[2] = millis();
-      }
-      //give the semaphore to fetch air pullution data
-      if((ui_state.current_screen_type == SUB_MENU_SCREEN) && (ui_state.menu_page_index == MENU_PAGE_WEATHER) && 
-        (ui_state.sub_menu_page_index == SUB_MENU_PAGE_2) && //page 2 is the air pollution page
-        (millis() - last_api_tick_start[3] >= AIR_POLLUTION_UPDATE_INTERVAL)){
-          xSemaphoreGive(g_nm.global_xsem.air_pollution_xsem); // give the semaphore to fetch air pollution data
-          last_api_tick_start[3] = millis();
-      }
+
 
 
 
@@ -1055,6 +1173,7 @@ static void ui_refresh_thread(void *args){
           if(ui_state.sub_menu_page_index == SUB_MENU_PAGE_END) circle_tick_start = millis();//wait for a second before scrolling back to the first page
         }
       }
+      
       // check if the previous touch event is triggered
       if(xSemaphoreTake(g_nm.global_xsem.prev_page_xsem, 0) == pdTRUE){
         if(ui_state.current_screen_type == MENU_SCREEN){
@@ -1066,6 +1185,7 @@ static void ui_refresh_thread(void *args){
           if(ui_state.sub_menu_page_index == SUB_MENU_PAGE_BEGIN) circle_tick_start = millis();//wait for a second before scrolling back to the first page
         }
       }
+      
       // check if the ok/cancel touch event is triggered
       if(xSemaphoreTake(g_nm.global_xsem.ok_cancel_xsem, 0) == pdTRUE){
         if(ui_state.current_screen_type == MENU_SCREEN){
@@ -1079,20 +1199,11 @@ static void ui_refresh_thread(void *args){
             last_api_tick_start[0] = millis(); // reset the last api tick start time
           }
           // give the semaphore to fetch real-time weather data immediately
-          if(ui_state.menu_page_index == MENU_PAGE_WEATHER && ui_state.sub_menu_page_index == SUB_MENU_PAGE_0){
+          if(ui_state.menu_page_index == MENU_PAGE_WEATHER && ui_state.sub_menu_page_index == SUB_MENU_PAGE_1){
             xSemaphoreGive(g_nm.global_xsem.weather_realtime_xsem); // give the semaphore to fetch real-time weather data
             last_api_tick_start[1] = millis(); // reset the last api tick start time
           }
-          // give the semaphore to fetch weather forecast data immediately
-          if(ui_state.menu_page_index == MENU_PAGE_WEATHER && ui_state.sub_menu_page_index == SUB_MENU_PAGE_1){
-            xSemaphoreGive(g_nm.global_xsem.weather_forecast_xsem); // give the semaphore to fetch weather forecast data
-            last_api_tick_start[2] = millis(); // reset the last api tick start time
-          }
-          // give the semaphore to fetch air pollution data immediately
-          if(ui_state.menu_page_index == MENU_PAGE_WEATHER && ui_state.sub_menu_page_index == SUB_MENU_PAGE_2){
-            xSemaphoreGive(g_nm.global_xsem.air_pollution_xsem); // give the semaphore to fetch air pollution data
-            last_api_tick_start[3] = millis(); // reset the last api tick start time
-          }
+
         }
         else if(ui_state.current_screen_type == SUB_MENU_SCREEN){
           //clear all sub menu pages objects
@@ -1117,6 +1228,7 @@ static void ui_refresh_thread(void *args){
 
         }
       } 
+      
       //refresh current sub menu page
       if(ui_state.current_screen_type == SUB_MENU_SCREEN) {
           auto func = refresh_table[ui_state.sub_menu_page_index][ui_state.menu_page_index];
@@ -1168,7 +1280,7 @@ void display_thread(void *args){
 
   //lvgl tick task
   String taskName = "(lvgltick)";
-  xTaskCreatePinnedToCore(lvgl_tick_task, taskName.c_str(), 1024*4, (void*)taskName.c_str(), TASK_PRIORITY_LVGL_DRV, &task_lvgl_tick, LvglTaskCore);
+  xTaskCreatePinnedToCore(lvgl_tick_task, taskName.c_str(), 1024*5, (void*)taskName.c_str(), TASK_PRIORITY_LVGL_DRV, &task_lvgl_tick, LvglTaskCore);
   delay(500);//wait a bit for lvgl tick task to start, necessary for lvgl to work properly
 
   taskName = "(uirefresh)";

@@ -88,6 +88,12 @@ void setup() {
       g_nm.location.coord.lon = tz->longitude;
       LOG_W("Timezone calibrate to : %.1f, Latitude: %.6f, Longitude: %.6f", g_nm.location.tz_offest, g_nm.location.coord.lat, g_nm.location.coord.lon);
   }
+
+  //for test, set location to Chengdu, China
+  g_nm.location.coord.lat = 30.6667;
+  g_nm.location.coord.lon = 104.0667;
+
+
   delete tz;
   /************************************************************** CREATE MARKET THREAD ***************************************************/
   taskName = "(nmapi)";

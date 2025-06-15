@@ -5,7 +5,7 @@
 #include "device.h"
 #include "nmapi.h"
 #include <map>
-#include <list>
+#include <vector>
 
 #define CURRENT_VERSION     "v0.0.02"
 #define MINER_WTDG_TIMEOUT  (1000*60*15) //15分钟看门狗
@@ -50,7 +50,12 @@ typedef struct{
 
 typedef struct{
     String      description;
-    String      icon;
+    struct{
+        String   id;
+        uint8_t  *addr;
+        uint16_t size; // Size of the icon in bytes
+        bool     updated; // Whether the icon has been updated
+    }icon;
     String      main;
     int         id;
 }weather_info_t;
@@ -100,7 +105,7 @@ typedef struct{
     uint32_t       cnt; // Number of forecast nodes
     String         cod; // Response code
     uint32_t       message; // Response message
-    std::list<forecast_node_t> list; // List of forecast nodes
+    std::vector<forecast_node_t> list; // List of forecast nodes
 }weather_forecast_info_t;
 
 /*************************** weather realtime ***************************/
@@ -128,13 +133,13 @@ typedef struct{
     struct {
         String country;
         uint32_t id;
-        String sunrise;
-        String sunset;
+        uint32_t sunrise;
+        uint32_t sunset;
         uint32_t type;
     }sys;
     uint32_t timezone;// Timezone offset in seconds
     uint32_t visibility;
-    weather_info_t weather;
+    std::vector<weather_info_t> weather;
     struct{
         float         deg;
         float         speed;
@@ -161,7 +166,7 @@ typedef struct{
 
 typedef struct{
     coord_info_t   coord;
-    std::list<air_pollution_node_t> list; // List of forecast nodes
+    std::vector<air_pollution_node_t> list; // List of forecast nodes
 }air_pollution_info_t;
 
 /*************************** Crypto Price ***************************/
